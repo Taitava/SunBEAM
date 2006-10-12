@@ -1,0 +1,74 @@
+SunBEAM - Projektipäiväkirja 4.10.2006 - ?.?.200?
+-------------------------------------------------
+
+Tämä on SunBEAM-pelin tekemisen aikana kirjoittamani projektipäiväkirja. Kirjoittelen tässä niitä näitä pelin tekemiseen liittyen: mikä on mennyt hyvin, mikä huonosti, mitä olen oppinut, millainen peli on milloinkin ollut sekä joitakin pikkutarkkoja teknisiä tietojakin jne. Oletan, että lukija on pelannut peliä tai vähintäänkin tietää, mitä pelissä tehdään, sillä en nyt ala pelin ideaa tässä kertaamaan kun se löytyy tuolta ohjetiedostostakin.
+
+Haluan myös kiittää tässä CoolBasicaa, jolla tämä peli on tehty, sekä CoolBasic Software Development Kitiä, joka on CoolBasicille tehty, silloin tällöin laajeneva koodikirjasto. CoolBasicilla on ollut kohtalaisen helppoa koodata peliä, ja CBSDK:sta olen saanut sopivia funktioita peliin.
+
+Jos teet itsekin pelejä vaikkapa harrastuksena, toivon tämän päiväkirjan antavan edes vähän vinkkejä erilaisiin pelintekotilanteisiin liittyen.
+
+Copyright (C) 2006 Jarkko Linnanvirta - tätä päiväkirjaa saa levittää ilmaiseksi alkuperäisenä versionaan
+
+4.10.2006
+
+Aloitin projektin 2.10. ja olen koodannut sitä nyt näiden kolmen päivän ajan varmaan joka hetki kun on ollut omaa aikaa. Koodia on tullut juuri 771 riviä (vaikkakin tyhjiä rivejä jonkin verran välissä). Tällä hetkellä olen erittäin tyytyväinen aikaansaannokseeni, sillä pelimoottori on pääpiirteiltään valmis.
+
+Tällä hetkellä pelimoottori käsittää siis ennen kaikkea editorin, jossa on mahdollista asettaa peilejä, kohteita sekä valonlähteen; valonsäteen liikkumista ja peileistä kimpoamista mallintavan (ja ilmeisesti varsin bugittoman) moottorin sekä kenttien tallennus- ja latausmoottorin. Tällä hetkellä peilit ja kohteet on mahdollista lukita tai vapauttaa lukosta. Valonlähteen lukitsemisen teen luultavasti kohta. Pelimoottori sallii myös salasanan asettamisen kentälle, mikä tällä hetkellä tekee sen, että jos kentän osat lukitsee, voi lukituksen vapauttaa vain kentän ominaisuuksista, joita pääsee muokkaamaan vain jos tietää kentän salasanan. Myöhemmin teen ehkä mahdollisuuden estää myös kentän pelaaminen, jos salasanaa ei tiedä. Riippuu, koenko sen tarpeelliseksi.
+
+Olen juuri tehnyt suuren parannuksen valonsäteen liikkumista ja peileistä kimpoamista heijastavaan moottoriin (lyhyemmin: valonsädemoottori). Valonsäde saattoi bugittaa ja mennä peilin läpi, mikäli toinen peili oli aivan sen peilin takana, johon säteen kuuluisi oikeasti osua. Nyt olen saanut tehtyä valonsädemoottorista niin tarkan, että jos ei bugi ole kokonaan hävinnyt, niin vähintääkin harventunut huomattavasti. Tarkempi moottori on vain valitettavasti myös raskaampi, joten teen myöhemmin pelin asetuksiin säädön, josta tarkkuuden saa itse valita. Eli erittäin tarkka: vähän bugeja, epätarkka: nopea. Jahka konetehot vuosien myötä nousee (ja jos joku tätä vielä vuosien perästä pelaa), niin sitten viimeistään voi laittaa sen tarkimman tason.
+
+---
+
+Testasin peliä lisää ja huomasin sittenkin vielä yhden hämärän bugin, jossa valonsäde lähti valonlähteensuuntauksesta huolimatta aina kohti ruudun vasempaa ylänurkkaa, mikäli siellä suunnassa OLI PEILI, johon törmätä. Lopulta löysin todella pienen virheen koodista, joka jätti tietyssä tilanteessa parin muuttujan arvoksi nollan. Nyt bugi on korjattu, ja tein pelille pari mielestäni erittäin rankkaa testiä tarkistaakseni, meneekö valonsäde enää peilistä läpi niin kuin se se meni ennen kuin olin tehnyt tuolla aiemmin mainitsemani _suuren parannuksen_ moottoriin. Jokaisessa tekemässäni testissä peli sai pähkäillä kaksi kymmentä sekuntia (erittäin pitkä aika tietokoneelle pienessä tilassa) umpinaisessa - ja harvinasen terävillä ja bugialttiilla kulmilla varustetussa tilassa. Teoriassa tilasta ei siis voinut päästä läpi. Eikä se läpi mennytkään. Moottori oli siis aiemmin kirjoittamani kuvauksen mukaisessa tarkimassa säädössä, joka ei nyt sitten ainakaan tähän astisten testien mukaan bugaa edes harvinaisissa tilanteissa. Mahtavaa!
+
+---
+
+Löysinpähän peliin myöskin taustamusan. Beetlesin Anna-biisistä tehty midi soi nyt letkeästi ja ajattomasti taustalla. Tosin CoolBasicilla (tai tarkemmin sanottuna varmaan sen käyttämällä fmod-äänikirjastolla) oli erimielisyyksiä midi-tiedoston kanssa (vaikka CB:n manuaalissa lukee, että miditkin käyvät). Näin ollen päädyin muuttamaan midin mp3-muotoon. Kokoa tuli reilusti lisää, vaikka kitsastelinkin äänenlaadussa (midin ollessa kyseessä laatua voi pienentää reippaasti ilman, että eroa edes huomaa). Noh, ainakin tiedän biisin soivan kaikilla koneilla juuri niin kuin se soi minun koneellani. :)
+
+Toi muuten varsin rennon ja rauhallisen tuntuman peliin.
+
+---
+
+11.10.2006
+
+Hiljakseen olen peliä koodaillut ja nyt onkin hyvä aika kirjoittaa jotakin tähän päiväkirjaan. Pelissä on nyt käytössä kaikki päässä kaavailemani elementit: peilit, kohteet, esteet ja estoalueet. Esteet ovat peilien kaltaisia elementtejä, joihin ei valonsäde saa osua, tai peli on menetetty. Estoalueet taas ovat elementtejä, joiden käsittämälle alueelle ei voi asettaa uusia peilejä. Estoalueita EI voi hämätä sijoittamalla peilin rajapisteet alueen ulkopuolelle niin, että peili välillä kulkisi estoalueen läpi. Poistotyökalukin ymmärtää jo näiden kahden uuden elementin päälle.
+
+Sain juuri valmiiksi siirtotyökalun, jolla elementtien liikuttelu käy päinsä ilman hankalaa Poista-Tee Uudestaan -kikkailua. Peilien rajapisteitä voi liikuttaa nappaamalla työkalulla pisteestä kiinni ja vetämällä haluamaansa paikkaan. Samalla voi kätevästi muuttaa peilin kulmaa ja pituutta. Näin myös esteiden kanssa. Kohteita voi liikuttaa nappaamalla kiinni VASEMMASTA YLÄKULMASTA. Niiden kokoa voi muuttaa nappaamalla kiinni OIKEASTA ALAKULMASTA. Sama koskee estoalueita. Ihan viimeistelty tämä työkalu ei ole, sillä se sallii myös lukittujen elementtien liikuttelemisen. Lisäksi peilejä on mahdollista liikuttaa estoalueille. Nämä seikat korjaan seuraavaksi.
+
+Niin ja olihan tuossa koulun lanitkin välissä. Koodailin peliä siellä hiukan (tein ainakin estetyökalun ja estoaluetyökalun). Joku kaveri kommentoikin peli-ideaa ihan näppäräksi.
+
+Mutta sitten lähitulevaisuuden suunnitelmiin. Kaavailemastani asetuksesta valonsädemoottorin tarkkuudesta en ole oikeastaan ollenkaan varma. Olen peliä testaillessani käyttänyt kokoajan tiukinta tarkkuutta, ja kentän suorittaminen on kieltämättä kestänyt parista sekunnista useampiin. Mikään mahdottomuus ei pelin pelaaminen tällä asetuksella ainakaan minun koneellani ole, joten ehkäpä ei ole tarvetta luoda peliin asetusta, jonka muuttaminen tekee siitä varmasti bugisemman. Tai jos moisen asetuksen laitan, niin tarkkuus korkeintaan puolitetaan, jolloin nopeuden pitäisi ainakin teoriassa kaksinkertaistua.
+
+Vaikka kenttiin voi asettaa salasanan, ei tällä voi kuitenkaan estää kentän pelaamista. Jätän tälläisen mahdollisuuden laittamatta peliin sen vuoksi, että sille tuskin löytyy käyttöä. Jos joku on jo kentän saanut käsiinsä, niin tuskinpa se niin erikoinen on, etteikö sitä saisi pelata. Vain kentän muokkaaminen voidaan estää salasanalla.
+
+Aion tehdä peliin top-listat niin, että lyhimmällä valonsäteenmatkalla pärjännyt pelaaja pääsee aina listan kärkeen. Listat ovat tietysti kenttäkohtaisia, eikä niihin voi samanlaisella ratkaisulla laittaa uutta tulosta. Olen päättänyt kehittää kentille jonkinlaisen elementtien tyypistä, määrästä, sijainnista ja koosta laskettavan tarkistussumman, jota käytetään listalle kirjoitettaessa. Jos myöhemmin tulee kirjoitus ratkaisulla, jolla on sama tarkistussumma jonkin edellisen kirjoituksen kanssa, niin kirjoitus evätään. Tämä siis estää saman ratkaisun kirjaamisen top-listalle useaan kertaan. Ja tietysti jos ratkaisu on sama kuin ennen, ei siinä kuljettu matkakaan voi olla entistä suurempi tai pienempi. Minun täytyy vain keksiä ovela kaava tarkistussummalle.
+
+Netti-top-listasta ei minulla ole vielä varmuutta. Toisaalta se voisi olla hyvä, mutta toisaalta taas allekirjoittaneen PHP-taidot ovat kehnot. Kyllä varmasti jonkun skriptin pystyn top-listaa pyörittävälle serverille kirjoittamaan, mutta en sitten tiedä miten turvallinen siitä tulisi. Mutta ehkäpä, ehkäpä.
+
+Sen verran nettiominaisuuksia peliin on kyllä tulossa, että sen voi päivittää paria nappulaa klikkaamalla. Itse pelin (exen) tiedostoineen voi päivittää päivitystoiminnon kautta. Lisää kenttiä taas voi ladata siihen tarkoitetun toiminnon kautta, jossa on mahdollista valita ladattavat kentät ja tarkastella niistä esikatselukuvaa ennen latauspäätöksen tekemistä. Voisi olla aika pop.
+
+---
+
+Noin, nyt on siirtotyökalua rajoitettu. Editorissa taitaa olla lukuisia pikkubugeja, jotka esiintyvät kun useampi elementti on päällekkäin ja kun sitten käyttäjä haluaa vaikkapa poistaa niistä jonkin tietyn elementin. Käyttäjän voi olla hankala osoittaa tarkalleen, mitä elementtiä tarkoittaa. Mutta koska en tätä itse ole vielä kovin pahana ongelmana kokenut, en sitä vielä korjaa. Saatan jopa jättää valmiiseen versioon ja korjata sitten päivityksissä.
+
+Seuraavana on vuorossa parin pienen graafisen virheen korjaamista, jotka liittyvät tuohon siirtotyökaluun. Sen jälkeen teen kentän ominaisuuksien säädöt loppuun, jonka jälkeen on mahdollista rajata käytettävien peilien määrä kentässä - eräänlainen haasteenluoja sekin. Tämän jälkeen sitten ne top-listat sekä pelin muu käyttöliittymä päivitystoimintoineen. Sitten pelin pitäisikin olla valmis.
+
+Tuntuu hassulta, että peli saattaa nyt hyvinkin olla puolivälissä tai jopa hieman ylikin. Kunpa en vain epähuomiossa innostuisi julkaisemaan peliä "keskeneräisenä" kuvitellen sen olevan valmis. Viimeisten vuosien aikana projektini eivät nimittäin ole valmistuneet näin pienessä ajassa, koska ovat aina paisuneet järkäleiksi.
+
+Mutta nyt nuQ, kello on 00:25 ja päivä arkisen torstain puolella. Tai ehkä kuitenkin käyn ensin syömässä. :)
+
+---
+
+12.10.2006
+
+Höh, juuri nyt en enää muista, mitä nuo pari korjattavaa grafiikkavirhettä olivatkaan. Noh, ehkä saan ne kohta palautettua mieleen. Löysin joka tapauksessa pari muuta bugia liittyen esteisiin. Olin ilmeisesti jokseenkin tuubassa siellä LANeilla kun nuo este-elementit koodasin. Eli elementtien lukitussysteemi luuli joidenkin elementtien jääneen lukkoon ja poistotyökalu taas ei halunnut poistaa este-elementtiä, jos sitä ennen oli jossain vaiheessa poistettu yksi tai useampi estoalue. Jälkimmäinen bugi johtui siitä, että työkalu ei halua poistaa kahta erityyppistä elementtiä samaan aikaan (jos ne ovat päällekkäin) ja merkitsee sen vuoksi muistiin, onko esimerkiksi estoalue juuri poistettu. Tätä tietoa ei sitten huomattu muuttaa myöhemmin tilanteen mentyä ohi. Vaan nyt toimii.
+
+Eipä tämä peli nyt niin valmis olekkaan kuin eilen ajattelin. Musiikkia tarvitaan vielä lisää, sillä tuo yksi kappale alkaa pitkään toistettuna tympäistä, vaikka muuten hyvä onkin. Ja niitä pelin mukana valmiiksi toimitettaviakin kenttiä pitäisi jossakin vaiheessa väsäillä. Ideoita vaan ei ole, mutta kaippa niitä tulee.
+
+---
+
+Keksin keinon nopeuttaa valonsädemoottoria. Nykyinen systeemi liikuttaa sädettä aina kerrallaan noin pikselin verran ja käy sen jälkeen läpi kaikki kentällä olevat elementit. Sitten taas liikutaan pikselin verran ja käydään elementit läpi jne. jne. Otan moottorin jatkokehittelyyn ja teen niin, että ennen säteen likuutusta kentästä luodaan tavallinen kuva tietokoneen muistiin, jossa ainakin peilit ja esteet on piirrettynä yksinkertaistettuna. Tätä kuvaa ei missään vaiheessa näytetä käyttäjälle, vaan moottori tarkistaa siitä aina valonsäteen liikutuksen jälkeen, onko uusien koordinaattien kohdalla jotakin. Jos on, käydään peilit ja esteet läpi. Tämä vähentää peilien ja esteiden turhaa läpikäyntiä huomattavasti.
+
+Olen myös huomannut, että itse kenttäeditorikin on hidastunut uusien ominaisuuksien myötä. Siinäkin käydään kokoajan elementtejä läpi jotta nähdään esimerkiksi, minne peilejä voi luoda ja siirtää, mitä elementtejä voi poistaa jne. Tulen ottamaan editorimoottorin tutkittavaksi ja pyrin vähentämään sen aiheuttamaa kuormaa. Editori ja valonsädemoottori eivät varsinaisesti vaikuta toisiinsa nopeudessa mitenkään.
+
+Saman tien voisin myös kommentoida koodin kunnolla. Nykyisellään kommentteja on erittäin harvassa ja esimerkiksi muuttujamäärittelyt ovat hujan hajan pelin lähdekoodin alkupäässä. Alkupäähän ne tulevat jäämäänkin, mutta kunnolla ryhmiteltyinä ja kommentoituina.

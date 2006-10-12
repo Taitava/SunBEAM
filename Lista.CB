@@ -1,0 +1,170 @@
+
+Const ListsNoMax = 100 'Korkeintaan N listaa
+Const ListItemsNoMax = 1000 'Korkeintaan N valintaa per lista
+Dim ListItems(ListsNoMax,ListItemsNoMax) As String
+Dim ListItemsNo(ListsNoMax)
+Dim ListSelected(ListsNoMax)
+Dim ListScroll(ListsNoMax)
+Dim ListActive(ListsNoMax) As Byte
+Dim ListSelectChanged(ListsNoMax) As Byte
+
+Function List(id, x,y, w,h, Scrollbar=1, keySelection=1)
+	old_r = getRGB(RED)
+	old_g = getRGB(GREEN)
+	old_b = getRGB(BLUE)
+	If w < TextWidth("A") Then w = TextWidth("A")
+	If h < TextHeight("A") Then h = TextHeight("A")
+    If ListScroll(id)>ListItemsNo(id)-h/TextHeight("A") Then ListScroll(id)=ListItemsNo(id)-h/TextHeight("A")
+    If ListScroll(id)<1 Then ListScroll(id)=1
+    
+	Color 64,64,64
+	Line x-1,y-1,x+w-1,y-1
+	Line x-1,y,x-1,y+h-1
+	Color 212,208,200
+	Line x-1,y+h,x+w,y+h
+	Line x+w,y-1,x+w,y+h-1
+	Color 128,128,128
+	Line x-2,y-2,x+w,y-2
+	Line x-2,y-1,x-2,y+h
+	Color 255,255,255
+	Line x-2,y+h+1,x+w+1,y+h+1
+	Line x+w+1,y-2,x+w+1,y+h
+	Box x,y,w,h
+    
+    If MouseHit(1) Then
+        If MouseX()=>x And MouseX()<=x+w And MouseY()=>y And MouseY()<=y+h Then
+            ListActive(id)=True
+            If Scrollbar=False Or MouseX()<x+w-15 Then
+                item = (MouseY()-y)/TextHeight("A")+1
+                SelectList(id,item)
+                ListSelectChanged(id)=True
+            End If
+        Else
+            ListActive(id)=False
+        End If
+    End If
+    
+    If keySelection And ListActive(id) Then
+        If KeyHit(cbkeyup) Then ListSelected(id)=Max(ListSelected(id)-1,1)
+        If KeyHit(cbkeydown) Then ListSelected(id)=Min(ListSelected(id)+1,ListItemsNo(id))
+    End If
+
+    If ListScroll(id)>ListSelected(id) And ListSelected(id)>0 Then ListScroll(id)=ListSelected(id)
+    If ListScroll(id)+h/TextHeight("A")-1 < ListSelected(id) Then ListScroll(id)=ListSelected(id)-h/TextHeight("A")+1
+    
+    ListSelected(id) = Max(ListSelected(id),0)
+    ListSelected(id) = Min(ListSelected(id),ListItemsNo(id))
+    
+    If ListSelected(id)>0 Then
+        Color cbdarkblue
+        yy = y+2+ (ListSelected(id)-ListScroll(id))*TextHeight("A")
+        Box x+1,yy, w-2, TextHeight("A")
+    End If
+        
+    If ListItemsNo(id)>h/TextHeight("A") And Scrollbar=True Then
+        If ListActive(id) And MouseDown(1) And MouseX()=>x+w-15 Then ListSelected(id) = max(Min(((MouseY()-y)*1.0)/h*(ListItemsNo(id)), ListItemsNo(id)),1)
+    
+        Color 64,64,64
+        Box x+w-15,y,15,h, OFF
+        Color 212,208,200
+        Box x+w-14,y+1,13,h-2,OFF
+        Color 212,208,200
+        Box x+w-13,y+2,11,h-4
+        
+        Color cbdark
+        yy = y + (ListSelected(id)*1.0-1)/(ListItemsNo(id)-1) *(h-TextHeight("A"))
+        yy = Min(Max(yy,y),y+h)
+        Box x+w-15,yy,15,TextHeight("A")
+    End If
+
+    Color 0,0,0
+    MinItem=ListScroll(id)
+    MaxItem=ListScroll(id)+h/TextHeight("A")-1
+    For i = MinItem To MaxItem
+        Text x+2,y+2+(i-ListScroll(id))*TextHeight("A"), ListItems(id,i)
+    Next i
+    
+    Color old_r,old_g,old_b
+    
+    'SetWindow Str(ListSelected(id)+"-"+ ListScroll(id))
+End Function
+
+Function SelectList(id,item)
+    ListSelected(id)=item
+End Function
+
+Function SelectListString(id,item$)
+    For i = 1 To ListItemsNo(id)
+        If ListItems(id,i)=item Then
+            ListSelected(id)=i
+            Return True
+        End If
+    Next i
+    Return False
+End Function
+
+Function AddListItem(id, item$, scrollaus=0)
+    If ListItemsNo(id)=ListItemsNoMax Then Return False
+    ListItemsNo(id)=ListItemsNo(id)+1
+    ListItems(id,ListItemsNo(id))=item
+    If scrollaus Then ListSelected(id)=ListItemsNo(id)
+    Return True
+End Function
+
+Function DeleteListItem(id, item)
+    For i = item To ListItemsNo(id)
+        If i<ListItemsNo(id) Then ListItems(id,i)=ListItems(id,i+1) Else ListItems(id,i)=""
+    Next i
+    ListItemsNo(id) = ListItemsNo(id)-1
+End Function
+
+Function DeleteListItemString(id, itemString$)
+    For i = 1 To ListItemsNo(id)
+        If ListItems(id,i)=itemString Then
+            item=i
+            Exit
+        End If
+    Next i
+    If item=0 Then Return False
+    For i = item To ListItemsNo(id)
+        If i<ListItemsNo(id) Then ListItems(id,i)=ListItems(id,i+1) Else ListItems(id,i)=""
+    Next i
+    ListItemsNo(id) = ListItemsNo(id)-1
+    Return True
+End Function
+
+Function FormatList(id)
+    For i = 1 To ListItemsNo(id)
+        ListItems(id,i)=""
+    Next i
+    ListItemsNo(id)=0
+    ListSelectionChanged(id)=False
+    ListSelected(id)=0
+End Function
+
+Function ChangeListItem(id,item,NewItem$)
+    ListItems(id,item) = NewItem
+End Function
+
+Function ChangeListItemString(id,item$,NewItem$)
+    For i = 1 To ListItemsNo(id)
+        If ListItems(id,i)=item Then
+            ListItems(id,i) = NewItem
+            Return True
+        End If
+    Next i
+    Return False
+End Function
+
+Function GetListSelected(id)
+    Return ListItems(id,ListSelected(id))
+End Function
+
+Function ListSelectionChanged(id)
+    If ListSelectChanged(id) Then
+        ListSelectChanged(id)=False
+        Return True
+    Else
+        Return False
+    End If
+End Function

@@ -1,0 +1,54 @@
+
+                                             BBBBBBBB      EEEEEEEEEEEE        AAAA        MMM                MMM
+                                             BBBBBBBBBB    EEEEEEEEEEEE       AAAAAA       MMMM              MMMM
+                                             BBB   BBBBB   EEE               AAA  AAA      MMMMM            MMMMM
+  SSSSSSSSSS  UU          UU  NN         NN  BBB     BBBB  EEE              AAA    AAA     MMMMMM          MMMMMM
+ SSSSSSSSSSS  UU          UU  NNN        NN  BBB      BBB  EEE              AAA    AAA     MMM MMM        MMM MMM
+SSS           UU          UU  NNNN       NN  BBB     BBBB  EEE              AAA    AAA     MMM  MMM      MMM  MMM
+SS            UU          UU  NN NN      NN  BBBBBBBBBBB   EEE             AAA      AAA    MMM   MMM    MMM   MMM
+SSS           UU          UU  NN  NN     NN  BBBBBBBBB     EEEEEEEEEEEE    AAAAAAAAAAAA    MMM    MMM  MMM    MMM
+ SSSSSSSSS    UU          UU  NN   NN    NN  BBBBBBBBBBB   EEEEEEEEEEEE    AAAAAAAAAAAA    MMM     MMMMMM     MMM
+  SSSSSSSSS   UU          UU  NN    NN   NN  BBB     BBBB  EEE            AAA        AAA   MMM      MMMM      MMM
+         SSS  UU          UU  NN     NN  NN  BBB      BBB  EEE            AAA        AAA   MMM       MM       MMM
+          SS  UUU        UUU  NN      NN NN  BBB     BBBB  EEE            AAA        AAA   MMM                MMM
+         SSS   UUU      UUU   NN       NNNN  BBB   BBBBB   EEE           AAA          AAA  MMM                MMM
+SSSSSSSSSSS     UUUUUUUUUU    NN        NNN  BBBBBBBBBB    EEEEEEEEEEEE  AAA          AAA  MMM                MMM
+SSSSSSSSSS        UUUUUU      NN         NN  BBBBBBBB      EEEEEEEEEEEE  AAA          AAA  MMM                MMM
+
+------------------------------------------- - - - ~~~~~~~~~~~~~ - - - -------------------------------------------
+------------------------------------------- - - - VER. BETA 0.5 - - - -------------------------------------------
+------------------------------------------- - - - ~~~~~~~~~~~~~ - - - -------------------------------------------
+
+
+ O - - - - - - - - - - - - - - - O
+          Ohjeen sis‰ltˆ
+ | ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ |
+
+ | 1. Pelin esittely             |
+
+ O - - - - - - - - - - - - - - - O
+
+
+
+---------- - - - ~~~~~~~~~~~~~~~~~ - - - ----------
+---------- - - - 1. Pelin esittely - - - ----------
+---------- - - - ~~~~~~~~~~~~~~~~~ - - - ----------
+
+SunBEAM on englanninkielisest‰ nimest‰‰n huolimatta t‰ysin suomalainen ja suomenkielinen peli. Peli-ideasta kerron kohta, mutta ensiksi haluan sanoa, ett‰ SunBEAMin kaltaisia pelej‰ ei paljoa taida olla, ja itsekin tied‰n vain yhden samantapaisen. Sekin on (/oli?) vasta projektivaiheessa kun t‰t‰ kirjoitin. Oikeastaan alkuper‰inen idea l‰htikin juuri siit‰ projektista, jonka nime‰ nyt en muista. CoolBasic.com:n foorumeilta siit‰ luin. P‰‰tin vain kyh‰t‰ jotakin pient‰ hiljaisuudessa el‰v‰n K-pelien k‰vijˆiden iloksi.
+
+"Pentti Erkkil‰ oli kinnostunut tietokoneista jo nuorena miehen‰. Niinp‰ h‰n totta kai tiesi Intel:n ja Amd:n olevan kesken‰‰n kilpailevia suoritinvalmistajia. Pentti opiskeli tietokoneita ja elekroniikkaa. H‰n valmistui ja tyˆllistyi.
+
+Mutta er‰‰n‰ p‰iv‰n‰:
+-Miksei t‰m‰ helvatun kone tee mit‰‰n!? huusi Pentti tˆiss‰‰n.
+
+Pentti sai heti potkut, sill‰ h‰n oli pelottanut yrityksen kaikki asiakkaat tiehens‰. Tuntikausien pohdintojen j‰lkeen Pentti ymm‰rsi viimein, mik‰ koneeseen oli mennyt. Tietokonealan alati kasvavat, p‰ivittyv‰t ja paisuvat ohjelmistot olivat vuosien saatossa viimein onnistuneet aina nujertamaan suorittimen kuin suorittimen. Tˆiss‰ olleen koneen suoritin ei en‰‰ jaksanut pyˆritt‰‰ Windows Xp:t‰, joka oli juuri ladannut ja asentanut automaattisesti 10 000 hotfixi‰.
+
+Pahinta oli, ett‰ suoritinta ei voinut p‰ivitt‰‰. Se oli uusin, tehokkain, kyvykk‰in ja hintavin suorittimen r‰‰p‰le, mik‰ kaupoista lˆytyi. Intel ja Amd nimitt‰in olivat ajaneet itsens‰ umpikujaan. Suorittimissa k‰ytett‰viss‰ mikropiireiss‰ ja niiden transistoreissa k‰ytetty puolijohdetekniikka oli tullut kehitysuransa p‰‰h‰n. Kukaan ei en‰‰ yksinkertaisesti kyennyt tekem‰‰n t‰ll‰ tekniikalla en‰‰ edellist‰ tehokkaampaa suoritinta.
+
+Pentti halusi ratkaista t‰m‰n ongelman, joten h‰n k‰ytti p‰ivi‰ ja viikkoja pelkk‰‰n pohdiskeluun. P‰‰ns‰rkyl‰‰kkeit‰ kului. Viimein tarpeeksi mietitty‰‰n, tutkittuaan ja kokeiltuaan asioita h‰n tuli tulokseen, ett‰ on mahdollista korvata suorittimien hitaat puolijohteet optisilla h‰rp‰kkeill‰, jolloin tieto suorittimen sis‰ll‰ kulkisi komponentista toiseen osapuilleen valonnopeudella!
+
+Ei kulunut kauaakaan, kun Pentti n‰pytteli k‰nnyk‰ll‰‰n pari numeroa soittaakseen molemmille Intel:lle ja Amd:lle - uunituore patentti taskussaan. Molemmat yritykset kiinnostuivat heti Pentin suunnitelmista ja ostivat pentilt‰ patentin sikahintaan jakaen sen kesken‰‰n puoliksi. Maksuksi sovittiin 10% kaikkien Intelin ja Amd:n uusien prosessorien tuotosta. Sill‰ Pentti voisi el‰‰ lopun ik‰ns‰ tekem‰tt‰ en‰‰ tyˆt‰.
+
+Mutta ei kulunut kuukauttakaan, kun molemmat yritykset ottivat j‰lleen Penttiin yhteytt‰ ilmoittaen, ett‰ heid‰n suunnittelijansa, ehitt‰j‰ns‰ ja jopa kahvinkeitt‰j‰ns‰ olivat ep‰onnistuneet yritt‰ess‰‰n suunnitella uudenlaista optista prosessoria. Pentille l‰hetettiin kaikki ep‰onnistuneet suunnitelmat tarkistettavaksi. Rahaahan Pentti ei saisi ennen kuin tietokonekauppiaat toitottaisivat talvella valoisaa joulua uusien optisten suorittimien ostajille."
+
+Sinun teht‰v‰n‰ on siis selvitt‰‰, mikseiv‰t suorritimien sis‰iset valons‰teet lˆyd‰ sinne, minne pit‰‰. Sinun tulee tehd‰ piirrustuksiin lis‰yksi‰ peilaamaan valons‰teet oikeisiin paikkoihin. Eik‰ sek‰‰n aina ole hyv‰. Sinun on pistett‰v‰ itsesi t‰ysill‰ likoon, sill‰ valon reitist‰ pit‰‰ myˆs saada lyhyt, jotta suorittimessa riitt‰‰ nopeus! Eik‰ hommaa helpota se, ett‰ saamasi piirrustukset on jo alunperin tehty enemm‰n tai v‰hemm‰n mielenvikaisesti. :DDDD
