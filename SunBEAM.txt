@@ -15,9 +15,9 @@ SSS           UU          UU  NN  NN     NN  BBBBBBBBB     EEEEEEEEEEEE    AAAAA
 SSSSSSSSSSS     UUUUUUUUUU    NN        NNN  BBBBBBBBBB    EEEEEEEEEEEE  AAA          AAA  MMM                MMM
 SSSSSSSSSS        UUUUUU      NN         NN  BBBBBBBB      EEEEEEEEEEEE  AAA          AAA  MMM                MMM
 
-------------------------------------------- - - - ~~~~~~~~~~~~~ - - - -------------------------------------------
-------------------------------------------- - - - VER. BETA 0.5 - - - -------------------------------------------
-------------------------------------------- - - - ~~~~~~~~~~~~~ - - - -------------------------------------------
+------------------------------------------ - - - ~~~~~~~~~~~~~~~ - - - ------------------------------------------
+------------------------------------------ - - - VER. VALMIS 1.7 - - - ------------------------------------------
+------------------------------------------ - - - ~~~~~~~~~~~~~~~ - - - ------------------------------------------
 
 
  O - - - - - - - - - - - - - - - O
@@ -26,29 +26,319 @@ SSSSSSSSSS        UUUUUU      NN         NN  BBBBBBBB      EEEEEEEEEEEE  AAA    
 
  | 1. Pelin esittely             |
 
+ | 2. Peliohjeet                 |
+
+ | 3. Laitteistovaatimukset      |
+ 
+ | 4. Internet-ominaisuudet		 |
+
+ | 5. Vikatilat                  |
+
+ | 6. Kysymyksiä ja vastauksia   |
+
+ | 7. Versiohistoria             |
+
+ | 8. Tekijä, palaute & levitys  |
+
  O - - - - - - - - - - - - - - - O
 
+
+
+H U O M I O !
+
+Älä tallenna tätä tiedostoa missään vaiheessa. Peli huomaa pienenkin muutoksen ja lakkaa toimimasta, jos ohjeita on muokattu.
+
+ÄLÄ SIIS EDES KORJAA KIRJOITUSVIRHEITÄ, JOS SELLAISIA LÖYTYY!
 
 
 ---------- - - - ~~~~~~~~~~~~~~~~~ - - - ----------
 ---------- - - - 1. Pelin esittely - - - ----------
 ---------- - - - ~~~~~~~~~~~~~~~~~ - - - ----------
 
-SunBEAM on englanninkielisestä nimestään huolimatta täysin suomalainen ja suomenkielinen peli. Peli-ideasta kerron kohta, mutta ensiksi haluan sanoa, että SunBEAMin kaltaisia pelejä ei paljoa taida olla, ja itsekin tiedän vain yhden samantapaisen. Sekin on (/oli?) vasta projektivaiheessa kun tätä kirjoitin. Oikeastaan alkuperäinen idea lähtikin juuri siitä projektista, jonka nimeä nyt en muista. CoolBasic.com:n foorumeilta siitä luin. Päätin vain kyhätä jotakin pientä hiljaisuudessa elävän K-pelien kävijöiden iloksi.
+SunBEAM on englanninkielisestä nimestään huolimatta täysin suomalainen ja suomenkielinen peli. Ideana on ohjata valonsäde erilaisissa kentissä tiettyihin kohteisiin asettamalla kenttiin peilejä muuttamaan valon kulkua.
 
-"Pentti Erkkilä oli kinnostunut tietokoneista jo nuorena miehenä. Niinpä hän totta kai tiesi Intel:n ja Amd:n olevan keskenään kilpailevia suoritinvalmistajia. Pentti opiskeli tietokoneita ja elekroniikkaa. Hän valmistui ja työllistyi.
+Alkutarina
+
+"Pentti Erkkilä oli kiinnostunut tietokoneista jo nuorena miehenä. Niinpä hän totta kai tiesi Intel:n ja Amd:n olevan keskenään kilpailevia suoritinvalmistajia. Pentti opiskeli tietotekniikkaa ja elekroniikkaa. Hän valmistui ja työllistyi joskus vuonna keppi ja kivi.
 
 Mutta eräänä päivänä:
 -Miksei tämä helvatun kone tee mitään!? huusi Pentti töissään.
 
 Pentti sai heti potkut, sillä hän oli pelottanut yrityksen kaikki asiakkaat tiehensä. Tuntikausien pohdintojen jälkeen Pentti ymmärsi viimein, mikä koneeseen oli mennyt. Tietokonealan alati kasvavat, päivittyvät ja paisuvat ohjelmistot olivat vuosien saatossa viimein onnistuneet aina nujertamaan suorittimen kuin suorittimen. Töissä olleen koneen suoritin ei enää jaksanut pyörittää Windows Xp:tä, joka oli juuri ladannut ja asentanut automaattisesti 10 000 hotfixiä.
 
-Pahinta oli, että suoritinta ei voinut päivittää. Se oli uusin, tehokkain, kyvykkäin ja hintavin suorittimen rääpäle, mikä kaupoista löytyi. Intel ja Amd nimittäin olivat ajaneet itsensä umpikujaan. Suorittimissa käytettävissä mikropiireissä ja niiden transistoreissa käytetty puolijohdetekniikka oli tullut kehitysuransa päähän. Kukaan ei enää yksinkertaisesti kyennyt tekemään tällä tekniikalla enää edellistä tehokkaampaa suoritinta.
+Pahinta oli, että suoritinta ei voinut päivittää. Se oli uusin, tehokkain, kyvykkäin ja hintavin suorittimen rääpäle, mikä kaupoista löytyi. Intel ja Amd nimittäin olivat ajaneet itsensä umpikujaan. Suorittimien sisältämissä mikropiireissä ja niiden transistoreissa käytetty puolijohdetekniikka oli tullut kehitysuransa päähän. Kukaan ei yksinkertaisesti kyennyt tekemään tällä tekniikalla enää edellistä tehokkaampaa suoritinta.
 
-Pentti halusi ratkaista tämän ongelman, joten hän käytti päiviä ja viikkoja pelkkään pohdiskeluun. Päänsärkylääkkeitä kului. Viimein tarpeeksi mietittyään, tutkittuaan ja kokeiltuaan asioita hän tuli tulokseen, että on mahdollista korvata suorittimien hitaat puolijohteet optisilla härpäkkeillä, jolloin tieto suorittimen sisällä kulkisi komponentista toiseen osapuilleen valonnopeudella!
+Pentti halusi ratkaista tämän ongelman, joten hän käytti päiviä ja viikkoja pelkkään pohdiskeluun. Päänsärkylääkkeitä kului. Viimein tarpeeksi mietittyään, tutkittuaan ja kokeiltuaan asioita hän tuli tulokseen, että on mahdollista korvata suorittimien hitaat puolijohteet optisilla härpäkkeillä, jolloin tieto suorittimen sisällä kulkisi osapuilleen valonnopeudella!
 
-Ei kulunut kauaakaan, kun Pentti näpytteli kännykällään pari numeroa soittaakseen molemmille Intel:lle ja Amd:lle - uunituore patentti taskussaan. Molemmat yritykset kiinnostuivat heti Pentin suunnitelmista ja ostivat pentiltä patentin sikahintaan jakaen sen keskenään puoliksi. Maksuksi sovittiin 10% kaikkien Intelin ja Amd:n uusien prosessorien tuotosta. Sillä Pentti voisi elää lopun ikänsä tekemättä enää työtä.
+Ei kulunut kauaakaan, kun Pentti näpytteli kännykällään pari numeroa soittaakseen molemmille Intel:lle ja Amd:lle - uunituore patentti taskussaan. Molemmat yritykset kiinnostuivat heti Pentin suunnitelmista ja ostivat häneltä patentin sikahintaan jakaen sen keskenään puoliksi. Maksuksi sovittiin 5% kaikkien Intelin ja Amd:n uusien prosessorien tuotosta. Sillä Pentti voisi elää lopun ikänsä tekemättä enää työtä.
 
-Mutta ei kulunut kuukauttakaan, kun molemmat yritykset ottivat jälleen Penttiin yhteyttä ilmoittaen, että heidän suunnittelijansa, ehittäjänsä ja jopa kahvinkeittäjänsä olivat epäonnistuneet yrittäessään suunnitella uudenlaista optista prosessoria. Pentille lähetettiin kaikki epäonnistuneet suunnitelmat tarkistettavaksi. Rahaahan Pentti ei saisi ennen kuin tietokonekauppiaat toitottaisivat talvella valoisaa joulua uusien optisten suorittimien ostajille."
+Mutta ei kulunut kuukauttakaan, kun molemmat yritykset ottivat jälleen Penttiin yhteyttä ilmoittaen, että heidän suunnittelijansa, kehittäjänsä ja jopa kahvinkeittäjänsä olivat epäonnistuneet yrittäessään suunnitella uudenlaista optista prosessoria. Pentille lähetettiin kaikki epäonnistuneet suunnitelmat tarkistettavaksi. Rahaahan Pentti ei saisi ennen kuin tietokonekauppiaat toitottaisivat talvella valoisaa joulua uusien optisten suorittimien ostajille."
 
-Sinun tehtävänä on siis selvittää, mikseivät suorritimien sisäiset valonsäteet löydä sinne, minne pitää. Sinun tulee tehdä piirrustuksiin lisäyksiä peilaamaan valonsäteet oikeisiin paikkoihin. Eikä sekään aina ole hyvä. Sinun on pistettävä itsesi täysillä likoon, sillä valon reitistä pitää myös saada lyhyt, jotta suorittimessa riittää nopeus! Eikä hommaa helpota se, että saamasi piirrustukset on jo alunperin tehty enemmän tai vähemmän mielenvikaisesti. :DDDD
+Sinun tehtävänä on siis selvittää, mikseivät suoritimien sisäinen valonsäde löydä sinne, minne pitää. Sinun tulee tehdä piirrustuksiin (pelissä tuttavallisemmin "kenttiin") lisäyksiä peilaamaan valonsäde oikeisiin paikkoihin. Eikä sekään aina ole hyvä. Sinun on pistettävä itsesi täysillä likoon, sillä valon reitistä pitää myös saada lyhyt, jotta suorittimessa riittää nopeus! Eikä hommaa helpota se, että saamasi piirrustukset on jo alunperin tehty enemmän tai vähemmän mielenvikaisesti. :DDDD
+
+
+------------ - - - ~~~~~~~~~~~~~ - - - ------------
+------------ - - - 2. Peliohjeet - - - ------------
+------------ - - - ~~~~~~~~~~~~~ - - - ------------
+
+Peliohjeet löytyvät itse pelistä. Käynnistä peli ja klikkaa Ohjeet-painiketta. Sijoitin ohjeet siksi itse pelin sisään, että ne olisivat helpommin saatavilla pelitilanteessa.
+
+
+------ - - - ~~~~~~~~~~~~~~~~~~~~~~~~ - - - -------
+------ - - - 3. Laitteistovaatimukset - - - -------
+------ - - - ~~~~~~~~~~~~~~~~~~~~~~~~ - - - -------
+
+Koneesi olisi hyvä täyttää nämä vaatimukset pelin sujuvan toimimisen vuoksi.
+
+Minimi:
+ + Suoritin: 350 MHz Intel, AMD tai vastaava
+ + Käyttöjärjestelmä: Windows 98, Me, 2000, Xp, Vista ja 7
+ + RAM-muisti: 64 MB (Windows 98) / 256 MB (Windows Xp) / Uudemmilla Windowseilla 1024 MB
+ + Näytönohjain: 8 MB muistia (3D-laitteistokiihdytystä ei tarvita)
+ + DirectX 7.0 (voit ladata täältä: www.microsoft.com)
+ + Hiiri ja näppäimistö
+ + Noin 6 Mb kovalevytilaa
+
+Suositus:
+ + Suoritin: 1000 - 2000 Mhz tai enemmän
+ + RAM-muisti: 1024 MB tai enemmän
+ + Näytönohjain: 32 Mb muistia tai enemmän (3D-laitteistokiihdytystä ei tarvita)
+ + Rullahiiri
+ + Äänikortti
+ + Internetyhteys päivityksiä ja nettitoplistaa varten
+ + Kovalevytilaa vähän enemmän kuin 6 Mb, jotta jäisi tilaa vielä päivityksillekin ;)
+
+ 
+HUOMAUTUS RESOLUUTIOSTA!
+
+Pelin natiivi resoluutio on 800x600. Peli pyrkii käyttämään tätä resoluutiota kokoruutu-tilassa. Jos resoluution kanssa on ongelmia, kokeile seuraavia vaihtoehtoja:
+
+A) Vaihda ikkunoituun tilaan
+Käynnistä peli komennolla "SunBEAM.exe IKKUNA" (ilman lainausmerkkejä). Peli toimii nyt ikkunoidussa tilassa.
+
+B) Muuta resoluutiota
+Versiosta 1.7 lähtien peli tarjoaa mahdollisuuden valita pelin käyttämä resoluutio vapaasti. Luo resolution.txt-niminen tiedosto ja kirjoita siihen haluamasi resoluutio muodossa LEVEYSxKORKEUS, esim. 1024x768. Erotinmerkkinä tulee käyttää x:ää (pienellä!). Jos pelin käynnistyksessä tulee virheilmoitus "Unable to set graphics mode", on valitsemasi resoluutio todennäköisesti virheellinen.
+
+Resoluution muuttaminen sijoittaa pelinäkymän ruudun vasempaan yläreunaan, eli pelinäkymää ei skaalata koko resoluution mittaiseksi! Tällä tavalla voi kuitenkin korjata laajakuvanäyttöjen ongelman, jossa 800x600-resoluutio venyttää pelinäkymää virheellisesti vaakasuunnassa vääristäen pelinäkymän mittasuhteet. Lisäksi kokoruutu-tilassa pelin käyttöliittymä pyörii tehokkaammin kuin ikkunoidussa tilassa, joten peliä on silloin mukavampi pelata.
+
+
+------------- - - - ~~~~~~~~~~~~~~~~~~~~~~~~ - - - ------------
+------------- - - - 4. Internet-ominaisuudet - - - ------------
+------------- - - - ~~~~~~~~~~~~~~~~~~~~~~~~ - - - ------------
+
+Tämä peli käyttää nettiyhteyttä päivitysten tarkistamiseen ja toplistojen totettamiseen. Peli ei missään vaiheessa ota yhteyttä nettiin, mikäli et niin halua. Peli ei myöskään lähetä koskaan yksityisiä tietoja koneeltasi minnekään. Ainoastaan lähetetään kulloiseenkin toimintoon tarvittavat, pelin sisäiset tiedot.
+
+Päivitystoiminto
+----------------
+
+Päivitystoiminto muodostaa yhteyden http://koti.mbnet.si/jare1/sunbeam/ -osoitteeseen (tai varaosoitteeseen http://www.kpelit.net/sunbeam/) ja hakee sieltä tiedon pelin uusimmasta versiosta. Yhteys muodotestaan vain kun menet pelin päävalikossa Päivitys-osioon. Samainen toiminto voi myös ladata kaikki uuteen versioon päivittämiseen vaadittavat tiedostot koneellesi, mikäli erikseen hyväksyt päivityksen lataamisen.
+
+Toplistat
+---------
+
+Pelin jokaisella kentällä on oma toplistansa, johon tallennetaan valonsäteen kulkema matka silloin, kun kaikki kohteet on saatu valaistua. Toplistalla lyhimmäksi merkitty matka on listan ensimmäisellä sijalla. Versiosta 1.7 lähtien pelin toplistoilla on kaksi tallennustapaa:
+
+1) Oman koneen toplista
+Tässä tilassa toplistat tallennetaan pelaajan omalle koneelle, eikä peli ota yhteyttä nettiin. Tällä tavalla peli on toiminut aina ennen versiota 1.7. Versiossa 1.7 tämä toimintatapa on oletusasetuksena sen vuoksi, ettei peli ottaisi pelaajan tietämättä yhteyttä nettiin.
+
+2) Online-toplista
+Tässä tilassa peli lataa toplistan ja tallentaa listalle kirjoitettavat uudet merkinnät K-pelien tietokantaan nettipalvelimelle. Yhteydenotot palvelimeen ovat yleensä lyhyitä, joten pelin toiminnassa ei pitäisi syntyä tämän ominaisuuden vuoksi suuria viiveitä. Käytännössä online-toplista mahdollistaa sen, että sinä näet muiden pelaajien tekemiä ennätyksiä, vaikkeivat he pelaisi samalla koneella kuin sinä. Samoin muut näkevät sinun tekemiä ennätyksiä.
+
+Muutama huomautus koskien online-toplistoja:
+- Online-toplista-tilan ollessa päällä, peli ottaa yhteyttä palvelimeen seuraavissa tilanteissa:
+	- Kun kenttä avataan. Tällöin peli lataa palvelimella olevan toplistan.
+	- Kun kenttä päästään läpi (kaikki kohteet on valaistu). Tällöin peli päivittää toplistan tietääkseen varmasti, pääseekö pelaajan tuloksella toplistalle vai ei.
+	- Kun pelaaja syöttää nimensä toplistalle. Tällöin syötetty nimi ja valon kulkema matka lähetetään palvelimelle. Tämän jälkeen ladataan vielä kerran päivitetty toplista, jolloin listalla on juuri syötetty pelaajan nimi oikealla sijalla.
+- Peli tallentaa online-toplistan myös omalle koneellesi. Eli jos vaihdat toplista-tilaksi "Oman koneen toplista", niin online-toplistalla jo olevat merkinnät näkyvät myös oman koneesi listassa.
+- "Oman koneen toplista" -tilan aikana toplistalle syötettyjä merkintöjä ei lähetetä enää jälkeenpäin palvelimen toplistalle, vaikka vaihtaisit toplista-tilaksi "Online-toplista".
+
+
+------------- - - - ~~~~~~~~~~~~ - - - ------------
+------------- - - - 5. Vikatilat - - - ------------
+------------- - - - ~~~~~~~~~~~~ - - - ------------
+
+Tässä kappaleessa on lueteltu mahdollisia vikoja, joita pelissä saattaa ilmetä.
+
+ * Virheilmoitus: "Ei voida asettaa 800x600-resoluutiota 32-bittisillä väreillä."
+  + Tietokoneesi näytönohjain ei tue tätä resoluutiota, tai sinulla ei ole DirectX (7.0 tai uudempi) asennettuna.
+  + Korjaa asentamalla uusin DirectX (www.microsoft.com).
+  + Jos ei auta, käynnistä peli (esimerkiksi pikakuvakkeen avulla) komentamalla SunBEAM.exe IKKUNA jolloin peli käynnistyy ikkunassa kokoruudun sijaan.
+  + Jos ei edelleenkään auta, katso vastauksia seuraavasta ongelmasta:
+
+ * Virheilmoitus: "Unable to set graphics mode."
+  + Onko pelin juurihakemistossa resolution.txt-tiedosto?
+    - Kyllä: Kyseiseen tiedostoon määritetty resoluutio on sellainen, jota näytönohjaimesi ei kykene käyttämään. Korjaa määritetty resoluutio (esim. 1024x768) tai poista koko tiedosto.
+	- En: Kokeile tietokoneen käynnistämistä uudelleen.
+      + Jos ei auta, käynnistä peli parametrilla "16" ilman lainausmerkkejä. (Voit käyttää sitä myös yhdessä IKKUNA-parametrin kanssa jolloin erotinmerkillä tai järjestyksellä ei ole väliä). Tällöin käytetään 16-bittisiä värejä 32-bittisten sijaan.
+
+ * Virheilmoitus: "Can't read from negative array index."
+  + Virhe pelin koodissa, jolloin peli yrittää lukea muistitaulukkoa jokseenkin hullusti.
+  + Koeta ladata peliin korjaus Päivitys-toiminnon avulla.
+  + Jos ei auta, lähetä minulle palautetta ja kerro, mitä olit juuri tekemässä, kun tämä ilmaantui.
+
+ * Virheilmoitus: "Memory Access Violation"
+  + Virhe pelin koodissa, jolloin peli yrittää käyttää jotakin mediaa (grafiikkaa tai musiikkia) väärin tai tekee muuta käsittämätöntä.
+  + Koeta ladata peliin korjaus Päivitys-toiminnon avulla.
+  + Jos ei auta, lähetä minulle palautetta ja kerro, mitä olit juuri tekemässä, kun tämä ilmaantui.
+
+ * Virheilmoitus: "Tiedostoa XXX ei löydy." TAI "Tiedosto XXX ei ole kunnossa."
+  + Pelin päivitys on mennyt pieleen, peli ei ole kopioitunut oikein tai tiedostoille on tapahtunut muuta pahaa.
+  + Lataa peli uudelleen osoitteesta http://www.kpelit.net/sunbeam/
+  
+ * Virheilmoitus: "Open to write failed"
+  + Jos tämä tulee aivan pelin alussa tai poistuttaessa pelin asetuksista; ei asetuksien tallennus tiedostoon jostakin syystä onnistunut.
+  + Jos tämä tulee kenttää tallennettaessa tai toplistaan kirjoittamisen yhteydessä, ei kentän tallentaminen onnistunut.
+  + Lähetä asiasta palautetta.
+ 
+ * Virheilmoitus: "Open to read failed."
+  + Kentän avaaminen ei onnistunut tai kenttälistan lataaminen ei onnistunut.
+  + Voi myös olla asetustiedoston avaaminen pelin käynnistyksessä ei onnistunut.
+  + Lähetä asiasta palautetta.
+
+ * Virheilmoitus: "Map file XXX does not exist."
+  + Peli yrittää avata kenttää jostain syystä väärällä tiedostonimellä
+  + Tarkista päivitykset ja jos sinulla on pelin uusin versio, lähetä palautetta.
+
+ * Virheilmoitus: "File XXX is not a proper SunBEAM file."
+  + Pelissä yritetään avata kenttää, jota ei tunnisteta oikeaksi kentäksi tai kenttä on vioittunut. Jos tämä virheilmoitus tulee, on pelissä jokin aivan kummallinen virhe. Peli nimittäin jättää listaamatta kaikki tunnistamattomat kentät, joten vääränlaista kenttää ei edes pitäisi päästä avaamaan.
+  + Tarkista päivitykset ja jos sinulla on pelin uusin versio, lähetä palautetta.
+
+ * Bugi: Valonsäde menee peilistä tai esteestä läpi
+  + Vika valonsäteen radan laskevassa moottorissa.
+  + Koeta ladata peliin korjaus Päivitys-toiminnon avulla.
+  + Jos ei auta, nappaa vikatilanteesta kuva ja lähetä minulle. Jos olit juuri kehittämässä uutta kenttää, voit myös tallentaa kentän ja lähettää minulle (salasanasuojauksella tai ilman - minun ei tarvitse muuttaa kentän ominaisuuksia).
+  + HUOM! Joskus tulee tilanteita, joissa valonsäde vain näyttää menevän peilin läpi. Tällöin  valonsäde oikeasti osuu peiliin ensin kerran ja kimpoaa muihin peileihin, joista se lopulta päätyy tämän ensimmäisen peilin toiselle puolelle ja osuu suunnilleen samaan kohtaan kuin aiemmin, jolloin saattaa näyttää siltä, että valo menisi vain suoraan läpi.
+  
+  * Bugi: Valonsäde pysähtyy peiliin
+   + Varmista, ettei peili ole sittenkin este.
+   + Varmista, ettei peli vain lopettanut valonsäteen laskemista aikarajan ylittyessä (sitä voi säätää asetuksista - oletus on 10 sekuntia)
+   + Jos ei auttanut, nappaa tilanteesta kuva ja lähetä minulle sähköpostilla osoitteeseen jare@kpelit.net, kiitos.
+
+ * En kuule musiikkia
+  + Tarkista, että musiikki on kytketty pelin asetuksista ja että kaiuttimesi ovat päällä (ja että niissä on voluumia)
+  + Tarkista, että Windowsin ääniasetuksissa yleinen äänen voimakkuus ei ole nollassa.
+  + Tarkista, että Windowsin ääniasetuksissa WAV-äänen voimakkuus ei ole nollassa.
+  + Tarkista, että äänet eivät ole hiljennetty Mute-toiminnolla Windowsissa.
+  + Tarkista, että kaiuttimien johdot on kytketty kunnolla.
+  + Tarkista, että tiedosto Data\Musiikki.mp3 löytyy (jos ei löydy, pelin pitäisi kyllä huomauttaa tästä).
+  + Kokeile, lähteekö muista peleistä tai ohjelmista mitään ääntä
+   - Jos ei lähtenyt, lataa äänikorttiisi uudet ajurit ja tarkista äänikortin kunto muutenkin.
+   - Jos lähti, lähetä palautetta minulle asiasta. Kerro ainakin äänikorttisi merkki ja malli.
+
+ * Säädin pelissä näytön gammaa ja nyt en näe asettaa sitä takaisin
+  + Poista Asetukset.jtn-tiedosto. Tämä palauttaa kaikki asetukset oletusarvoihinsa.
+
+ * Peilit ja/tai esteet näkyvät välillä/aina ohuina valkoisina viivoina
+  + Tarkista, että grafiikan kooksi ei ole asetettu "pieni".
+  + Todennäköisesti kyse on kuitenkin pelin sisäisestä viasta, jossa kaikille peileille ei ole piirretty omaa kuvaa, joka tulisi esittää näytöllä. Tällöin kuvan sijasta käytetään ohutta viivaa. Vikaa ei esiintynyt peliä testatessa, joten ota yhteyttä, mikäli havaitset tämän vian! (Ja koeta päivittää peli ennen yhteydenottoa - vika voikin olla jo korjattuna).
+  + Väliaikaisena korjauksena voit esimerkiksi mennä editorissa asetuksiin ja palata sieltä takaisin (mitään muutoksia ei tarvita), jolloin grafiikan pitäisi päivittyä.
+
+
+----- - - - ~~~~~~~~~~~~~~~~~~~~~~~~~~~ - - - -----
+----- - - - 6. Kysymyksiä ja vastauksia - - - -----
+----- - - - ~~~~~~~~~~~~~~~~~~~~~~~~~~~ - - - -----
+
+Tämä kappale sisältää kysymyksiä vastauksineen sellaisista asioista, joista ohjeen muut kappaleet eivät kerro.
+
+ K  Miten voin muuttaa asetukset takaisin oletusarvoihinsa?
+ V  Poista Asetukset.jtn-tiedosto. Peli luo automaattisesti uuden tilalle oletusasetuksilla.
+
+ K  Unohdin luomani kentän salasanan. Onko se mahdollista saada selvitettyä?
+ V  Ei ole. Kannattaa siis pitää hyvää huolta salasanoista, jos kenttiä haluaa vielä myöhemmin muokata.
+
+ K  Miten tehokkaasti luomani kentät salataan?
+ V  Ei kovinkaan vankasti, jos ammattitason salauksiin verrataan. Silti esimerkiksi kentän salasanan selvittäminen vaatii pelistä sellaista taustatietoa, jota ei mistään pahemmin saa - edes pelin exe-tiedostoa tutkimalla. Näin ollen kukaan ei halua lähteä murtamaan kentän suojausta vain tehdäkseen kepposia. :)
+
+ K  Onko pelin kuvien tai musiikin muokkaaminen mahdollista?
+ V  Vastaus on kyllä. Peli vain ei lähde enää muokkauksen jälkeen käyntiin.
+
+ K  Mitä tiedosto cbNetwork.dll tekee?
+ V  Se on nettikomentokirjasto, jota pelin päivitystoiminto ja nettitoplista käyttää. Peli ei lähetä mitään yksityisiä tietoja internetiin eikä ota yhteyttä nettiin käyttäjän tietämättä.
+
+ K  Koneessani ei ole internetiä. Miten pelin päivittäminen nyt käy?
+ V  Mene koneelle, jolla pääset nettiin, ja lataa peli osoitteesta http://www.kpelit.net.
+ V  Siirrä peli sitten esimerkiksi usb-muistille tai cd:lle ja sitä kautta koneeseen, jossa nettiä ei ole. Voit siirtää uuden peliversion suoraan vanhan päälle.
+
+ K  Koneessani ei ole nettiä, joten voinko poistaa cbNetwork.dll-tiedoston?
+ V  Et. Peli nimittäin tarkistaa latautuessaan, että kaikki tiedostot on kunnossa. Näin ollen myös cbNetwork.dll tarvitaan, vaikkei tarkistuksessa nettiä käytetäkkään. Jos saat koneeseesi joskus netin, on ainakin pelin päivittäminen ja nettitoplistan käyttäminen sitten helppoa.
+ 
+ K  Miksei kuvan nappaaminen onnistu kun peliä ajetaan ikkunassa?
+ V  Tarkkaa syytä en tähän tiedä. Tuloksena syntyy kuitenkin CoolBasicin omaa Screenshot-komentoa käyttämällä pelkkä musta kuvatiedosto. Korjaan tämän jossakin päivityksessä hoitamalla tallennuksen jollakin muulla tapaa.
+ 
+ K  Saanko levittää itse luomiani kenttiä pelistä irrallisina esimerkiksi kotisivullani?
+ V  Saat. Omien kenttien levitys on täysin sallittua ja toivottavaa. Kuulisin tästä kuitenkin mielelläni voidakseni ohjata pelistä kiinnostuneita sivustoille, joilla kenttiä levitetään. Pakko ei kuitenkaan ole minulle ilmoittaa.
+ 
+ K  Olen päivittänyt pelin päivitystoiminnolla ja nyt haluaisin levittää sitä. Jos levitän lataamaani alkuperäistä zip- tai rar-pakettia, uudet päivitykset eivät tule mukana. Kuinka minun tulisi toimia?
+ V  Helpointa on ohjata peliä haluavat henkilöt lataamaan peli K-pelien sivuilta. Jos tämä ei onnistu, voit itse ladata sivuilta uuden zip- tai rar-paketin - tai vaihtoehtoisesti pakata itselläsi jo olevan pelin kaikkine tiedostoineen pakkausohjelmalla. Voit myös jättää paketista pois itse tekemiäsi kenttiä, jos niin haluat - mutta alkuperäisten kenttien tulee säilyä. Kannattaa vielä paketin luomisen jälkeen tarkistaa, että paketti purkautuu oikein ja peli lähtee käyntiin.
+ 
+ K  Miten kenttien toplistan tyhjennys onnistuu?
+ V  Avaa kenttä ja klikkaa Kentän ominaisuudet. Jos kenttä on suojattu, sinulta kysytään salasanaa. Laita täppä kohtiin Tallenna kenttä sekä  Tyhjennä toplista ja klikkaa Ok. Pelissä alunperin olleiden kenttien toplistan tyhjentäminen ei onnistu, sillä vain minä tiedän niiden salasanat. HUOMAUTUS! Toplistan tyhjentäminen vaikuttaa ainoastaan omalla koneella olevaan toplistaan! Nettitoplistoja ei voi tyhjentää kukaan muu kuin minä.
+
+
+---------- - - - ~~~~~~~~~~~~~~~~~ - - - ----------
+---------- - - - 7. Versiohistoria - - - ----------
+---------- - - - ~~~~~~~~~~~~~~~~~ - - - ----------
+
+Tämä kappale sisältää tietoa peliin tehdyistä muutoksista eri versioiden välillä. Tietoa löytyy myös kenttien yhteensopivuuksista eri versioiden välillä.
+
+Ohjelman versiomuutokset
+ * 1.6 -> 1.7
+  + Mahdollisuus käyttää nettitoplistaa, eli voi paremmin kilpailla muiden pelaajien kesken.
+  + Manuaalin, www- ja email-osoitteiden kevyt tarkistus/päivitys.
+  + Pari esteettistä parannusta käyttöliittymässä:
+	- Hiiren kursori ei muutu enää "kielletty toimenpide" -kursoriksi kun valmista kenttää pelattaessa siirto- tai poistotyökalun ollessa käytössä, kursori siirettään kentässä valmiina olevan elementin päälle.
+	- Estoalueet piirretään melkein alimmaiseksi - ainoastaan kohteet jäävät estoalueiden alle. Näin estoalueiden palkkien alle ei voi vahingossa jäädä peilejä tai esteitä peittoon.
+  + Typo-fix koodissa: Kellonajan näyttämisen päälle/pois -asetus ei näkynyt, koska sen x-koordinaattiin oli jostain syystä ilmestynyt ylimääräinen ykkönen eteen, mikä paiskasi asetuksen ulos ruudulta piiloon. Tämä on nyt korjattu.
+  + Lisätty mahdollisuus Custom-resoluution säätämiseen.
+  + Kaksi uutta kenttää, joista yksi on vaikea ja toinen todella vaikea.
+  ! Päivitystoimintoon lisätty varaosoite. Jos päivityksiä vielä tulee, päivitystoiminto toimii näin ollen varmemmin.
+  ! Tämän version päivitykset eivät aiheuttaneet muutoksia varsinaisessa pelimekaniikassa.
+ * 1.5 -> 1.6
+  + Seitsemän uutta kenttää, joista yhden vaikeusaste on helppo, kolmen vaikea ja kolmen todella vaikea.
+ * 1.1 -> 1.5
+  + Valon laskeminen on paljon nopeampaa.
+  + Editori on nyt kevyempi.
+  + Lisätty kolmas musiikkikappale.
+  + Lisätty vähän ääniä (niitä ei aiemmin ollut lainkaan. Äänet voi myös kytkeä pois asetuksista).
+  + Lisätty tekstielementti, jolla kentän tekijä voi kirjoittaa kenttäänsä tekstilaatikoita vaikkapa pieniksi läpipääsyvihjeiksi - tai vaikka muistiinpanoiksi itselleen kentän myöhempää jatkamista varten.
+  + Kentän tekijä voi nyt rajoittaa peilien pituuden (peilien määrän pystyi rajoittamaan jo aiemmin).
+  ! Edelliset kaksi lisäystä muuttivat hieman kenttäformaattia, mutta vanhat kentät käyvät edelleen tähän uuteen versioon.
+  + Seuraavien päivitysten lataamisen eteneminen näkyy reaaliajassa ja välkkymättä.
+  + Taustaruudukon ja ruudukkoon kohdistamisen voi nyt kytkeä pois, jos haluaa.
+  + Muutama uusi kenttä.
+  + Lisätty alku- ja loppu-fade.
+  - Poistettu toiminto, jonka avulla hiiren oikealla napilla saattoi valita juuri tietyn kentällä olevan elementin. Poistin toiminnon koska se ei toiminut enää kunnolla editorin uudistusten jälkeen.
+  + Parannettu tukea vanhoille koneille: Jos näytönohjain ei tue 32-bittisiä värejä 800x600-resoluutiolla, on nyt mahdollista käyttää myös 16-bittisiä värejä.
+  + Muita pieniä parannuksia.
+
+ * 1.0 -> 1.1
+  + Pientä viilausta.
+  + Aiemmin liikutettaessa jotakin elementtiä, saattoi sen alta paljastua toinen, samanlainen elementti. Tämä on nyt korjattu.
+  + Kaksi uutta kenttää (Kahdeksan (vaikea) ja Osat (helppo)).
+
+Huomioita kenttäformaatin muutoksista
+
+ * Pelin versio 1.5 ymmärtää versioiden 1.0 ja 1.1 kenttiä, mutta pelin versiot 1.0 ja 1.1 eivät VÄLTTÄMÄTTÄ ole yhteensopivia version 1.5 ja  sitä uudempien kenttien kanssa. Tätä voi toki kokeilla, jos tarvetta on.
+
+
+----- - - - ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ - - - ----
+----- - - - 8. Tekijä, palaute & levitys - - - ----
+----- - - - ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ - - - ----
+
+Tämän pelin olen tehnyt minä, Jarkko Linnanvirta (Jare). Palautetta voit lähettää joko sähköpostilla osoitteeseen jare@kpelit.net tai osoitteessa www.kpelit.net/sunbeam/. Kaikki palaute on tervetullutta ja parannusehdotukset otetaan huomioon peliin mahdollisesti tulevissa päivityksissä.
+
+Kiitokset seuraaville:
+ * CoolBasic (www.coolbasic.com): Loistava ohjelmointikieli, jolla tämä peli on tehty. Peli on tehty Wanhalla CoolBasicilla, eli versiolla Beta 10.43.
+ * CoolBasic Software Development Kit (koti.mbnet.fi/cbsdk/): Hyvä funktiokirjasto, auttanut tässä pelissä paljon.
+ * CoolBasic Koodikirjasto (cbkk.systec.fi): Toinen hyvä funktiokirjasto, josta on tässä pelissä ollut apua.
+ * CoolText (www.cooltext.com): Valikon nappulat sain täällä tehtyä kätevästi.
+ * The Boris: Testaus ja pari grafiikkaa
+ * Jussi (jussisoftware.urli.net): Testaus
+ * Shogo Kawada: Testaus ja taustakuva
+ * Dy3r: Testaus
+ * Marcoder (http://www.coolbasic.com/phpBB3/memberlist.php?mode=viewprofile&u=105): Nettikomennot päivityksiä varten
+ * Midi DataBase (www.mididb.com): Musiikit (jotka valitettavasti jouduin muuttamaan mp3-muotoon CoolBasicin huonon midi-tuen vuoksi)
+ 
+Peli on tekijänoikeuslain alainen. Sitä saa levittää, kunhan siitä ei peritä maksua ja kunhan sen tekijäksi ei väitetä ketään muuta kuin minua ja kunhan peliä ei ole muokattu ilman minun lupaani. Omia kenttiä saa toki olla pelin mukana.
+
+ (C) 2006 - 2010 Jarkko Linnanvirta

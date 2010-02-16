@@ -1,0 +1,69 @@
+
+Dim scroll_position(100)
+Const VerticalScrollbar = 0
+Const HorinzonalScrollBar = 1
+Global DraggedScroll
+
+Function ScrollBar2(id,x,y,koko,minimi,maksimi,suunta=0,hiirix=-1,hiiriy=-1)
+    If hiirix=-1 And hiiriy=-1 Then
+        hiirix = MouseX()
+        hiiriy = MouseY()
+    End If
+    old_r = getRGB(RED)
+    old_g = getRGB(GREEN)
+    old_b = getRGB(BLUE)
+    
+    position = (scroll_position(id)*1.0-minimi)/(maksimi-minimi)*(koko-8)
+    If suunta = VerticalScrollbar Then
+        w=10
+        h=koko
+        nappix=x
+        nappiy=position+y
+    Else
+        w=koko
+        h=10
+        nappix=position+x
+        nappiy=y
+    End If
+    Color 212,208,200
+    Box x,y,w+1,h+1
+    Color 64,64,64
+    Line x-1,y-1,x+w,y-1
+    Line x-1,y,x-1,y+h	
+    Color 128,128,128
+    Line x,y,x+w-1,y
+    Line x,y+1,x,y+h-1
+    Color 255,255,255
+    Line x+w+1,y-1,x+w+1,y+h
+    Line x-1,y+h+1,x+w+1,y+h+1
+    Box x+1,y+1,w-2,h-2
+    
+    If hiirix=>x And hiirix<=x+w Then
+        If hiiriy=>y And hiiriy<=y+h Then
+            draggedscroll = id
+        End If
+    End If
+    
+    If MouseDown(1)=False And draggedscroll=id Then draggedscroll=-1
+    
+    If draggedscroll = id Then
+        If suunta = VerticalScrollBar Then
+            scroll_position(id) = minimi + (hiiriy*1.0-y)/(koko)*(maksimi-minimi)
+        Else
+            scroll_position(id) = minimi + (hiirix*1.0-x)/(koko)*(maksimi-minimi)
+        End If
+    End If
+    If scroll_position(id) > maksimi Then scroll_position(id) = maksimi
+    If scroll_position(id) < minimi Then scroll_position(id) = minimi
+                
+    
+    Color cbdark
+    Box nappix,nappiy,10,10
+    
+    Color old_r,old_g,old_b
+    Return scroll_position(id)
+End Function
+
+Function SetScrollbar(id, arvo)
+    scroll_position(id) = arvo
+End Function

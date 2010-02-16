@@ -1,0 +1,74 @@
+Include "o:\coolbasic/sdk/include/cbFormElements.cb"
+
+
+SCREEN 380,420
+ClsColor 212,208,200
+SetWindow "SunBEAM - Dat-tiedoston luoja (ver. 1.7)"
+
+Const OhjelmanSalasana = "pe943ndk48yd8fg5o94d"
+Const Versio = "1.7"
+
+Repeat
+    key=GetKey()
+    
+    Text 10,10, "Lis‰‰ tiedostot kansiosta:"
+    hak$ = Inputfield(key, 12,30, 300,20, hak)
+    lis‰‰ = CmdButton("Lis‰‰", 318,29, 50,20)
+    If lis‰‰ Then Lis‰‰Tiedostot(getText(hak))
+    
+    List(1, 12,55, 355,300)
+    
+    poista = CmdButton("Poista valittu", 12,360, 150,20)
+    If poista Then DeleteListItem(1, ListSelection(1))
+    
+    tallenna = CmdButton("Tallenna SunBEAM.dat", 12,ScreenHeight()-25, 200,20)
+    If tallenna Then TallennaDat()
+
+    DrawScreen
+Forever
+
+Function Lis‰‰Tiedostot(hak$)
+    If Right(hak,1)<>"\" And Right(hak,1)<>"/" And hak<>"" Then hak+"\"
+    oldDir$=CurrentDir()
+    ChDir hak
+    StartSearch
+    Repeat
+        Tiedosto$ = FindFile()
+        If Tiedosto<>"" And isdirectory(Tiedosto)=False Then AddListItem(1, hak+Tiedosto)
+    Until Tiedosto=""
+    EndSearch
+    ChDir oldDir
+End Function
+
+Function TallennaDat()
+    f = OpenToWrite("data\SunBEAM.dat")
+    WriteString f, EnCrypt2(OhjelmanSalasana, Versio)
+    For i = 1 To ListItemsNo(1)
+        Tiedosto$ = ListItems(1,i)
+        Tarkistussumma = Crc32(Tiedosto)
+        WriteString f, EnCrypt2(OhjelmanSalasana, Tiedosto)
+        WriteString f, EnCrypt2(OhjelmanSalasana, Tarkistussumma)
+    Next i
+    CloseFile f
+End Function
+
+Function EnCrypt2(CryptKey$,CryptText$)
+    //Lainattu osoitteesta
+    //http://www.coolbasic.com/forums/index.php?showtopic=427&st=0&p=3225&#entry3225
+    //Tehnyt: Nixe
+
+    Crypted$ = ""
+    Eu = 0
+    LnKey = Len(CryptKey$)   
+    LnText = Len(CryptText$)   
+    For Au = 1 To LnText
+        Eu = Eu + 1     
+        If Eu > LnKey Then Eu = 1
+        KeyValue = Asc(Mid(CryptKey$, Eu, 1))
+        Value = Asc(Mid(CryptText$, Au, 1)) 
+        Value = Value + KeyValue
+        If Value > 255 Then Value = Value - 255
+        Crypted$ = Crypted$ + Chr(Value)
+    Next Au 
+    Return Crypted$
+End Function

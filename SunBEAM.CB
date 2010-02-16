@@ -1,318 +1,814 @@
-If Not GFXModeExists(800,600,16) Then MakeError "Ei voida asettaa 800x600-resoluutiota 16-bittisillä väreillä."
-SCREEN 800,600,16,0
-Include "J:\OHJELMAT\CoolBasic\SDK\include\cbFormElements.cb"
-Include "J:\OHJELMAT\CoolBasic\SDK\include\cbMath.cb"
-Include "lista.cb"
+
+Include "sdk.cb"
+Include "scroll.cb"
+Include "OnlineToplist.cb"
+
+SetWindow "SunBEAM"
 SAFEEXIT OFF
 
-Type Peilit
-    Field x1
-    Field y1
-    Field x2
-    Field y2
-    Field lukittu
-    Field osumia 'kuinka monesti tiettyyn peiliin on osuttu
-End Type
+Print "Lataan..."
+DrawScreen
+TarkistaTiedostot()
 
-Type Kohteet
-    Field x
-    Field y
-    Field w
-    Field h
-    Field täytetty
-    Field lukittu
-End Type
+//Muuttujat
 
-Type Estoalueet
-    Field x
-    Field y
-    Field w
-    Field h
-    Field lukittu
-End Type
+    'Asetukset
+        'Oletusasetukset
+        Global MusiikkiSallittu  : MusiikkiSallittu  = True
+        Global Varoaika          : Varoaika          = 10000 'Kuinka kauan SunBEAMin piirtäminen saa kestää
+        Global Gamma             : Gamma             = 0
+        Global Ikkunoitu         : Ikkunoitu         = False 'Ajetaanko peliä ikkunassa (True) vai kokoruudulla (False)
+        Global GrafiikanKoko     : GrafiikanKoko     = 3
+        Global GridKoko          : GridKoko          = 10
+        Global NäytäKello        : NäytäKello        = True
+        Global ValittuValo       : ValittuValo       = 0 'Mikä valonlähde (väri) on valittuna (0, 1 tai 2)
+        Global NäytäGrid         : NäytäGrid         = True
+        Global SnapToGrid        : SnapToGrid        = True
+        Global ÄänetSallittu     : ÄänetSallittu     = True
+		Global OnlineToplist	 : OnlineToplist	 = False 'Ei käytetä onlinetoplistaa käyttäjän tietämättä
+        
+        'Oletusvärit
+        Global PeiliR    : PeiliR=0      : Global PeiliG    : PeiliG=164  : Global PeiliB    : PeiliB=255
+        Global EsteR     : EsteR=192     : Global EsteG     : EsteG=192   : Global EsteB     : EsteB=192
+        Global Kohde1R   : Kohde1R=10    : Global Kohde1G   : Kohde1G=32  : Global Kohde1B   : Kohde1B=50
+        Global Kohde2R   : Kohde2R=254   : Global Kohde2G   : Kohde2G=237 : Global Kohde2B   : Kohde2B=14
+        Global EstoalueR : EstoalueR=192 : Global EstoalueG : EstoalueG=0 : Global EstoalueB : EstoalueB=0
+        Global ValoR     : ValoR=255     : Global ValoG     : ValoG=255   : Global ValoB     : ValoB=0
+        Global ValittuR : Global ValittuG : Global ValittuB
+        
+        'Muutetaan asetuksia
+        If FileExists("Asetukset.jtn") Then
+            LataaAsetukset()
+        Else
+            TallennaAsetukset()
+        End If
+		If InStr(Lower(CommandLine()),"ikkuna") Then
+            Ikkunoitu=True
+            TallennaAsetukset()
+        End If
+        If InStr(Lower(CommandLine()),"16") Then
+            COLORS=16
+			TallennaAsetukset()
+        Else
+            COLORS=32
+        End If
+        If ikkunoitu=False And GFXModeExists(800,600,32)=False Then MakeError "Ei voida asettaa 800x600-resoluutiota 32-bittisillä väreillä."
+		resow = 800
+		resoh = 600
+		If FileExists("resolution.txt") And ikkunoitu=False Then
+			f = OpenToRead("resolution.txt")
+			stri$ = ReadLine(f)
+			resow = Max(Int(GetWord(stri,1,"x")),800)
+			resoh = Max(Int(GetWord(stri,2,"x")),600)
+			CloseFile f
+		EndIf
+        SCREEN resow,resoh,COLORS,Ikkunoitu
+        text 0,0, "Lataan..."
+        DrawScreen
+        ScreenGamma Gamma,Gamma,Gamma
+        
+    'Koodit
+        Global NäytäLumepeili
+        Global NäytäOsumat
+        If FileExists("koodi.txt") Then
+            f = OpenToRead("koodi.txt")
+            While Not EOF(f)
+                rivi$ = Lower(ReadLine(f))
+                If InStr(rivi, "lumepeili") Then
+                    NäytäLumepeili = True
+                ElseIf InStr(rivi, "osumapiirto") Then
+                    NäytäOsumat = True
+                ElseIf InStr(rivi, "venytys") Then
+                    SCREEN 800,600,COLORS,cbsizable
+                End If
+            Wend
+            CloseFile f
+        End If
 
-Type Esteet
-    Field x1
-    Field y1
-    Field x2
-    Field y2
-    Field lukittu
-End Type
+    'Yleiset
+        Global Taustakuva : Taustakuva = LoadImage("data\tausta.png")
+        Global GridKuva
+        Global Logokuva : Logokuva = LoadImage("data\logo.png") : MaskImage Logokuva, 255,255,255
+        Global CopyrightKuva : CopyrightKuva = LoadImage("data\Copyright.png") : MaskImage CopyrightKuva, 255,255,255
+        Global KPelitKuva : KPelitKuva = LoadImage("data\K-Pelit.png") : MaskImage KPelitKuva, 255,255,255
+        Global CBKuva : CBKuva = LoadImage("data\CoolBasic.png") : MaskImage CBKuva, 255,255,255
+        Global Versio As String 'pelin versio, luetaan myöhemmin tiedostosta
+        Global Palettikuva : Palettikuva = LoadImage("data\paletti.png")
+        
+    'Valikko
+        Global ButPelaamaan : ButPelaamaan=LoadImage("Data\Pelaamaan.png") : MaskImage ButPelaamaan, 255,255,255
+        Global ButUusiKenttä : ButUusiKenttä=LoadImage("Data\Uusi kenttä.png") : MaskImage ButUusiKenttä, 255,255,255
+        Global ButTarina : ButTarina=LoadImage("Data\Tarina.png") : MaskImage ButTarina, 255,255,255
+        Global ButOhjeet : ButOhjeet=LoadImage("Data\Ohjeet.png") : MaskImage ButOhjeet, 255,255,255
+        Global ButAsetukset : ButAsetukset=LoadImage("Data\Asetukset.png") : MaskImage ButAsetukset, 255,255,255
+        Global ButPäivitys : ButPäivitys=LoadImage("Data\Päivitys.png") : MaskImage ButPäivitys, 255,255,255
+        Global ButLopeta : ButLopeta=LoadImage("Data\Lopeta.png") : MaskImage ButLopeta, 255,255,255
 
-Global SädeOlemassa
-Global SädeX, SädeY
-Global SädeDir
-Global ruutu : ruutu=MakeImage(ScreenWidth(),ScreenHeight())
-Global TäytettyjäMaaleja
-Global Maaleja
-Global Peilejä
-Global PeilejäKorkeintaan
-Global Estoalueita
-Global Esteitä
-Const GridKoko = 10
-Global KentänNimi As String
-Global KentänTekijä As String
-Global KentänSalasana As String
-Global KentänTiedosto As String
-Global Työkalu
-Global SunBeam 'SunBEAM-säteen kuva
-SunBeam = MakeImage(ScreenWidth(),ScreenHeight())
-Global Osumia
-Global OsumiaEnintäänYhdessäPeilissä
-Global KuljettuMatka As Float
-Global SunBEAMError As String
-Global PalaaNäytäSunBEAMISTA
-Global GridNäytäSunBEAMissa : GridNäytäSunBEAMissa = True
-Global PeilitNäytäSunBEAMissa : PeilitNäytäSunBEAMissa = True
+    'Peilit
+        Type Peilit
+            Field x1
+            Field y1
+            Field x2
+            Field y2
+            Field lukittu
+            Field osumia                    'kuinka monesti tiettyyn peiliin on osuttu
+            Field SaaTallentaa              'pelaajan luomia peilejä ei saa tallentaa toplistan tallennuksen yhteydessä
+            Field Estetty                   'Jos sijaitsee estoalueella, niin liikuttaminen estetään
+            Field Img                       'Kuva, johon ko. elementti on piirretty
+        End Type
+        Global Peilejä                      'Kuinka monta peiliä kentällä ON yhteensä
+        Global PeilejäKorkeintaan           'Kuinka monta peiliä kentällä voi olla korkeintaan
+        Global PeilinPituusKorkeintaan      'Kuinka pitkä yksi peili voi olla korkeintaan
+        Global PeilitImg                    'Sisältää kuvan kaikista peileistä
+        Global PeilitLukkoImg               'Sisältää kuvan lukituista peileistä
+        Global PeilitMuuttuneet             'Jos true, niin ko. elementit on piirrettävä uudelleen
+        
+    'Kohteet
+        Type Kohteet
+            Field x
+            Field y
+            Field w
+            Field h
+            Field täytetty
+            Field lukittu
+        End Type
+        Global TäytettyjäKohteita
+        Global Kohteita
+        Global KohteetImg
+        Global KohteetMuuttuneet             'jos true, niin ko. elementit on piirrettävä uudelleen
+        
+    'Estoalueet
+        Type Estoalueet
+            Field x
+            Field y
+            Field w
+            Field h
+            Field lukittu
+        End Type
+        Global Estoalueita
+        Global EstoalueetImg
+        Global EstoalueetMuuttuneet         'jos true, niin ko. elementit on piirrettävä uudelleen
+        
+    'Esteet
+        Type Esteet
+            Field x1
+            Field y1
+            Field x2
+            Field y2
+            Field lukittu
+            Field Img 'Kuva, johon ko. elementti on piirretty
+        End Type
+        Global Esteitä
+        Global EsteetImg
+        Global EsteetLukkoImg
+        Global EsteetMuuttuneet 'jos true, niin ko. elementit on piirrettävä uudelleen
+        
+    'Tekstit
+        Type Tekstit
+            Field Teksti As String
+            Field x
+            Field y
+            Field w
+            Field h
+            Field Img 'Kuva, johon ko. elementti on piirretty
+        End Type
+        Global TekstilaatikkoTxt as string 'Teksti, jonka KirjoitaTeksti() palauttaa
+        Global TekstilaatikkoLeveys        'Leveys, jonka KirjoitaTeksti() palauttaa
 
-Global LukittujaOsia
-Const OhjelmanSalasana = "pe943ndk48yd8fg5o94d"
+    'Valonsäde
+        Global SädeOlemassa
+        Global SädeX, SädeY
+        Global SädeDir
+        Global SunBeam 'SunBEAM-säteen kuva
+        SunBeam = MakeImage(800,600)
+        Global SunBEAMError As String
+        Global Osumia
+        Global OsumiaEnintäänYhdessäPeilissä
+        Global KuljettuMatka As Float
+        Global Laskentaaika
 
-Const RADIO_Työkalut = 1
-Const RADIO_Työkalu1 = 1
-Const RADIO_Työkalu2 = 2
-Const RADIO_Työkalu3 = 3
-Const RADIO_Työkalu4 = 4
-Const RADIO_Työkalu5 = 5
-Const RADIO_Työkalu6 = 6
-Const RADIO_Työkalu7 = 7
-CheckRadioButton(RADIO_Työkalut,RADIO_Työkalu1)
+PäivitäMusiikki()
+        
+    'Valonlähde
+        valo1 = LoadImage("data\lamppu1.bmp")
+        valo2 = LoadImage("data\lamppu2.bmp")
+        valo3 = LoadImage("data\lamppu3.bmp")
+        Dim Valonlähde(360,2)
+        Smooth2D ON
+        For i = 0 To 360
+            Valonlähde(i,0) = CloneImage(valo1)
+            Valonlähde(i,1) = CloneImage(valo2)
+            Valonlähde(i,2) = CloneImage(valo3)
+            RotateImage Valonlähde(i,0), 360-i
+            RotateImage Valonlähde(i,1), 360-i
+            RotateImage Valonlähde(i,2), 360-i
+        Next i
+        DeleteImage valo1
+        DeleteImage valo2
+        DeleteImage valo3
+        Global ValonKierrätys : ValonKierrätys = LoadImage("data\kierrä.bmp")
+        HotSpot ValonKierrätys, ImageWidth(ValonKierrätys)/2,ImageHeight(ValonKierrätys)/2
+        
+    'Kentän tiedot
+        Global KentänNimi As String : KentänNimi="Nimetön"
+        Global KentänTekijä As String
+        Global KentänSalasana As String
+        Global KentänTiedosto As String
+        Global KenttäValmis As Byte
+        Global KentänVaikeusaste As Byte '0: Helppo 1: Vaikea 2: Todella vaikea
+        Global TMR_KenttäLadattu 'Timer():n arvo kun kenttä ladattiin
+        Dim VaikeusasteStr(2) As string 'Sis. eri Vaikeusasteiden nimet
+        VaikeusasteStr(0) = "Helppo"
+        VaikeusasteStr(1) = "Vaikea"
+        VaikeusasteStr(2) = "Todella vaikea"
+        
+    'Työkalut
+        Global Työkalu
+        Const RADIO_Työkalut = 1
+        Const RADIO_Työkalu1 = 1
+        Const RADIO_Työkalu2 = 2
+        Const RADIO_Työkalu3 = 3
+        Const RADIO_Työkalu4 = 4
+        Const RADIO_Työkalu5 = 5
+        Const RADIO_Työkalu6 = 6
+        Const RADIO_Työkalu7 = 7
+        Const RADIO_Työkalu8 = 8
+		Const RADIO_Toplist = 9
+        Const TYÖK_AsetaSäde = 5
+        Const TYÖK_LuoPeili = 1
+        Const TYÖK_LuoKohde = 4
+        Const TYÖK_PoistaOsia = 2
+        Const TYÖK_SiirräOsia = 3
+        Const TYÖK_LuoEste = 6
+        Const TYÖK_LuoEstoalue = 7
+        Const TYÖK_KirjoitaTeksti = 8
+        CheckRadioButton(RADIO_Työkalut,RADIO_Työkalu1)
+        
+        'Seuraavassa olevia muuttujia käytetään tilanteessa, jossa
+        'käyttäjän on tarkalleen valittava, mitä elementtiä tarkoittaa
+        '(jos on kaksi tai usempi elementti päällekkäin).
+        Global TarkoitettuTyyppi As String 'elementin tyyppi, esim. peili
+        Global TarkoitettuNumero 'monesko elementti ylemmästä tyypistä, esim. kolmas peili
+        
+    'Muut radio-jutut
+        Const RADIO_Gamma = 2
+        Const RADIO_Varoaika = 3
+        Const RADIO_Ohjeet = 4
+        Const RADIO_GfxKoko = 5
+        Const RADIO_GridKoko = 6
+        Const RADIO_Valo = 7
+        Const RADIO_VaikeusSäätö = 8
+        Const RADIO_VaikeusNäyttö = 9
+        
+    'Listat
+        Const LST_Temp = 0
+        Const LST_Kentät = 1
+        Const LST_PäivitysKuvaukset = 2
+        
+    'Vierityspalkit
+        Const SCR_PäivitysKuvaukset = 0
+        
+    'Musiikki
+        Global Musiikki 'linkki soitettavaan musiikkiin
 
-Const LST_Temp = 0
-Const LST_Kentät = 1
+    'Ulkoasu()-funktioon littyvät
+        Const ULK_Editori = 1
+        Const ULK_SunBEAM = 2
+        Global PeilitNäytäSunBEAMissa : PeilitNäytäSunBEAMissa = True
+        Global SädeNäytäSunBEAMissa : SädeNäytäSunBEAMissa = True
+        Global EstoalueetNäytäSunBEAMissa : EstoalueetNäytäSunBEAMissa = False
+        Global PalaaNäytäSunBEAMISTA
+        
+    'Hiiri
+        Global hiiri : hiiri = LoadImage("data\hiiri.png")
+        Global hiiri2 : hiiri2 = LoadImage("Data\hiiri2.png")
+        Global hiiristop : hiiristop = LoadImage("data\stop.bmp")
+        MaskImage hiiri, 255,255,255
+        MaskImage hiiri2, 255,255,255
+        MaskImage hiiristop, 255,255,255
+        ShowMouse hiiri
+        Global HiiriMuutettu 'aika,jolloin hiirtä on viimeksi muutettu
+        Global HiiriTyyppi
+        Global MouseHit2Data 'MouseHit2()-funktio toimii nopeammin kuin COolBasicin oman MouseHit()-funktio
+                             'Se vaatii vain UpdateMouseHit2()-funktion käyttöä päälenkissä, mieluiten DrawScreen:n jälkeen
+        Global HiirenVanhaSijainti 'Apumuuttuja HiiriLiikkunut()-funktiolle
+        Global HiiriKuvabuttoninpäällä
+        
+    'Toplista
+        Const ToplistaKoko = 10
+        Dim Toplista(ToplistaKoko,2) As String 'Sis. toplistan. Viimeisen ulottuvuuden tiedot: 0:nimi, 1:pisteet, 2:päivämäärä
+        
+    'Päivitys
+        Type PäivitysTiedostot
+            Field tiedosto$
+            Field kohde$
+            Field koko
+        End Type
+        Type PäivitysAjettavat
+            Field tiedosto$
+        End Type
+        
+    'Fontit
+        Global FNT_Tavallinen : FNT_Tavallinen = LoadFont("times New roman",16,True)
+        Global FNT_Versio : FNT_Versio = LoadFont("verdana",18,True,True)
+        Global FNT_Pieni : FNT_Pieni = LoadFont("arial narrow",14)
+        SetFont FNT_Tavallinen
+        
+    'Ikkuna
+        Global IkkunaX : IkkunaX=-1
+        Global IkkunaY : IkkunaY=-1
+        Global IkkunaHiiriXEro 'Ikkunanan ja hiiren koordinaattien ero...
+        Global IkkunaHiiriYEro '..kun ikkunaa raahataan hiirellä
+        Global IkkunaaSiirretään
 
-Global IkkunaX, IkkunaY
-
-Global Laskentaaika
-
-Global Musiikki 'linkki soitettavaan musiikkiin
-
-Const ULK_Editori = 1
-Const ULK_SunBEAM = 2
-
-Global hiiri : hiiri = LoadImage("data\hiiri.bmp")
-Global hiiristop : hiiristop = LoadImage("data\stop.bmp")
-MaskImage hiiri, 255,255,255
-MaskImage hiiristop, 255,255,255
-ShowMouse hiiri
-Global HiiriMuutettu 'aika,jolloin hiirtä on viimeksi muutettu
-Global HiiriTyyppi
-
-valo = LoadImage("data\valo.bmp")
-Dim Valonlähde(360)
-Smooth2D ON
-For i = 0 To 360
-    Valonlähde(i) = CloneImage(valo)
-    RotateImage Valonlähde(i), 360-i
-Next i
-DeleteImage valo
-
-Global ValonKierrätys : ValonKierrätys = LoadImage("data\kierrä.bmp")
-HotSpot ValonKierrätys, ImageWidth(ValonKierrätys)/2,ImageHeight(ValonKierrätys)/2
+    'Muut
+        Global ruutu : ruutu=MakeImage(800,600) 'wth ruutu???
+        Global LukittujaOsia
+        Const OhjelmanSalasana = "pe943ndk48yd8fg5o94d"
+        Global OtaKohtaKuva 'komentaa ottamaan kohta screenshotin
+        Global Kuvatiedosto As String 'otettavan kuvan tiedostonimi
+        
 
 //Ohjelma
+    //VALIKKO
+    g=-255
     Repeat
-        If HiiriTyyppi>0 and timer()>HiiriMuutettu+100 Then MuutaHiiri(0)
+        If Ikkunoitu=False And Lopeta=False Then
+            If g<Gamma Then g+2
+            ScreenGamma g,g,g
+        End If
+        PiirräTausta()
+        PiirräLogo()
+        x=120
+        y=220
+        HiiriKuvabuttoninpäällä=False
+        pelaamaan=ImgButton(ButPelaamaan,x,y)
+        uusikenttä=ImgButton(ButUusiKenttä,x+150,y)
+        tarina=ImgButton(ButTarina,x+330,y)
+        ohjeet=ImgButton(ButOhjeet,x+450,y)
         
-        DrawGrid()
+        asetukset=ImgButton(ButAsetukset,x+50,y+70)
+        päivitys=ImgButton(ButPäivitys,x+200,y+70)
+        lopeta=ImgButton(ButLopeta,x+350,y+70)
         
-        Ulkoasu(ULK_Editori)
+        DrawImage CopyrightKuva, 800/2-ImageWidth(CopyrightKuva)/2,600-60
+        kpelit = ImgButton(KPelitKuva, 800/2-100,600-200)
+        cb = ImgButton(CBKuva,10,10)
         
-        'Peilin luomisen estäminen estoalueella
-            If työkalu=2 Or työkalu=5 Then
-                EstäPeilinLuominen=False
-
-                If MouseDown(1) Or MouseUp(1) Then
-                    x1=px1
-                    y1=py1
-                    x2=px2
-                    y2=py2
-                Else
-                    x1=ToGrid(MouseX())
-                    y1=ToGrid(MouseY())
-                    x2=ToGrid(MouseX())+1
-                    y2=ToGrid(MouseY())+1
-                End If
-                aMax = Max(Abs(x2-x1),Abs(y2-y1))
-                For a# = 0 To aMax
-                    pros# = a/aMax
-                    x=x1+(x2-x1)*pros
-                    y=y1+(y2-y1)*pros
-                    For e.Estoalueet = Each Estoalueet
-                        If x=>e\x And x<=e\x+e\w Then
-                            If y=>e\y And y<=e\y+e\h Then
-                                if ((y>e\y+GridKoko Or x>e\x+GridKoko) And (y<e\y+e\h-GridKoko+1 Or x<e\x+e\w-GridKoko+1)) Or Työkalu=2 Then MuutaHiiri(1)
-                                EstäPeilinLuominen=True
-                            End If
-                        End If
-                    Next e
-                Next a#
+        SetFont FNT_Versio
+        Color 0,0,0
+        text 5,600-20, "Ver. "+Versio
+        SetFont FNT_Tavallinen
+        
+        MuutaHiiri(HiiriKuvabuttoninpäällä*2)
+        If pelaamaan Or uusikenttä Or tarina Or ohjeet Or asetukset Or päivitys Then MuutaHiiri(0)
+        
+        If kpelit And Ikkunoitu Then Execute "http://koti.mbnet.fi/jare1/kpelit/" : SetWindow "SunBEAM",2
+        If kpelit And Ikkunoitu=False Then Execute "http://koti.mbnet.fi/jare1/kpelit/"
+        If cb And Ikkunoitu Then Execute "http://www.coolbasic.com" : SetWindow "SunBEAM",2
+        If cb And Ikkunoitu=False Then Execute "http://www.coolbasic.com"
+        If pelaamaan Then
+            ok=AvaaKenttäIkkuna(True)
+            If ok Then PäivitäGrafiikka() : Pelimoottori(True)
+        End If
+        
+        If uusikenttä Then TyhjennäKenttä() : Pelimoottori()
+        If tarina Then TarinaIkkuna()
+        If ohjeet Then OhjeetIkkuna()
+        If asetukset Then AsetuksetIkkuna()
+        If päivitys Then PäivitysIkkuna()
+        If lopeta Then
+            If Not Ikkunoitu Then
+                ShowMouse OFF
+                For g=Gamma To -255 Step -1
+                    ScreenGamma g,g,g
+                    DrawScreen OFF
+                Next g
             End If
-    
-        'Kentän muokkaus
-        If MouseY()>20 And MouseY()<ScreenHeight()-100 Then
-            If KeyHit(cbkey1) Then CheckRadioButton(RADIO_Työkalut,RADIO_Työkalu1) 'Lähtötyökalu
-            If KeyHit(cbkey2) Then CheckRadioButton(RADIO_Työkalut,RADIO_Työkalu2) 'Peilityökalu
-            If KeyHit(cbkey3) Then CheckRadioButton(RADIO_Työkalut,RADIO_Työkalu3) 'Kohteetyökalu
-            If KeyHit(cbkey4) Then CheckRadioButton(RADIO_Työkalut,RADIO_Työkalu4) 'Poistotyökalu
-            If KeyHit(cbkey5) Then CheckRadioButton(RADIO_Työkalut,RADIO_Työkalu5) 'Siirtotyökalu
-            If KeyHit(cbkey6) Then CheckRadioButton(RADIO_Työkalut,RADIO_Työkalu6) 'Estetyökalu
-            If KeyHit(cbkey7) Then CheckRadioButton(RADIO_Työkalut,RADIO_Työkalu7) 'Estoaluetyökalu
+            Color 0,0,0
+            Box 0,0, 800,600
+            DrawScreen
+            End
+        End If
+        DrawScreen
+        PäivitäMusiikki()
+    Forever
+
+    //EDITORI
+    Function Pelimoottori(VainValmiitKentät=0)
+        gridupdate=1
+        Repeat
+            If HiiriTyyppi>0 and Timer()>HiiriMuutettu+100 Then MuutaHiiri(0)
             
-            If MouseHit(1) Then
-                Select työkalu
-                    Case 1 'Valonlähdetyökalu
+            'Luetaan koodi
+            key=GetKey()
+            If key>=48 And key<=122 Then Koodi$=Koodi$=Chr(key)
+            Select lower(Koodi)
+                Case "distortedmirror"
+                    NäytäLumepeli=Toggle(NäytäLumepeili)
+                    Koodi=""
+            End Select
+            
+            DrawGrid(gridupdate)
+            gridupdate=0
+            
+            'Katsotaan, onko hiiri jonkun elementin päällä kun käytetään poistotyökalua tai siirtotyökalua
+            MuutaHiiri(0)
+            If (työkalu=TYÖK_PoistaOsia Or työkalu=TYÖK_SiirräOsia) Then
+            
+                'Tekstit
+                For t.Tekstit = Each Tekstit
+                    If MouseX() >= t\x And MouseX() <= t\x+ImageWidth(t\Img) And MouseY() >= t\y And MouseY() <= t\y+ImageHeight(t\Img) Then
+                        If Not KenttäValmis Then
+                            MuutaHiiri(2)
+                        Else
+                            MuutaHiiri(1)
+                        End If
+                    End If
+                Next t
+                
+                'Peilit
+                oldR = getRGB(RED) : oldG = getRGB(GREEN) : oldB = getRGB(BLUE)
+                PickImageColor PeilitImg, MouseX(),MouseY()
+                r=getRGB(RED) : g=getRGB(GREEN) : b=getRGB(BLUE)
+                PickImageColor PeilitImg, ToGridX(MouseX()),ToGridY(MouseY())
+                r=r+getRGB(RED) : g=g+getRGB(GREEN) : b=b+getRGB(BLUE)
+                If r>0 Or g>0 Or b>0 Then
+                    'Hiiri on peilin päällä - tarkistetaan, onko peili lukittu
+                    PickImageColor PeilitLukkoImg, MouseX(),MouseY()
+                    r=getRGB(RED) : g=getRGB(GREEN) : b=getRGB(BLUE)
+                    PickImageColor PeilitLukkoImg, ToGridX(MouseX()),ToGridY(MouseY())
+                    r=r+getRGB(RED) : g=g+getRGB(GREEN) : b=b+getRGB(BLUE)
+                    If r>0 Or g>0 Or b>0 Then
+                        'Peili on lukittu
+                        If Not VainValmiitKentät Then MuutaHiiri(1) Else MuutaHiiri(0)
+                    Else
+                        'Peili ei ole lukittu
+                        MuutaHiiri(2)
+                    End If
+                End If
+                
+                'Esteet
+                PickImageColor EsteetImg, MouseX(),MouseY()
+                r=getRGB(RED) : g=getRGB(GREEN) : b=getRGB(BLUE)
+                PickImageColor EsteetImg, ToGridX(MouseX()),ToGridY(MouseY())
+                r=r+getRGB(RED) : g=g+getRGB(GREEN) : b=b+getRGB(BLUE)
+                If r>0 Or g>0 Or b>0 Then
+                    'Hiiri on esteen päällä - tarkistetaan, onko pEstelukittu
+                    PickImageColor EsteetLukkoImg, MouseX(),MouseY()
+                    r=getRGB(RED) : g=getRGB(GREEN) : b=getRGB(BLUE)
+                    PickImageColor EsteetLukkoImg, ToGridX(MouseX()),ToGridY(MouseY())
+                    r=r+getRGB(RED) : g=g+getRGB(GREEN) : b=b+getRGB(BLUE)
+                    If r>0 Or g>0 Or b>0 Then
+                        'Este on lukittu
+                        If Not VainValmiitKentät Then MuutaHiiri(1) Else MuutaHiiri(0)
+                    Else
+                        'Este ei ole lukittu
+                        MuutaHiiri(2)
+                    End If
+                End If
+                
+                'Estoalueet
+                For e.Estoalueet = Each Estoalueet
+                    If MouseX() >= e\x And MouseX() <= e\x+e\w And MouseY() >= e\y And MouseY() <= e\y+e\h Then
+                        If Not e\lukittu Then
+                            MuutaHiiri(2)
+                        Else
+                            If Not VainValmiitKentät Then MuutaHiiri(1) Else MuutaHiiri(0)
+                        End If
+                    End If
+                Next e
+                
+                'Kohteet
+                For k.Kohteet = Each Kohteet
+                    If MouseX() >= k\x And MouseX() <= k\x+k\w And MouseY() >= k\y And MouseY() <= k\y+k\h Then
+                        If Not k\lukittu Then
+                            MuutaHiiri(2)
+                        Else
+                            If Not VainValmiitKentät Then MuutaHiiri(1) Else MuutaHiiri(0)
+                        End If
+                    End If
+                Next k
+                
+                Color oldR,oldG,oldB
+            End If
+            
+            'Peilin luomisen tai siirtämisen estäminen estoalueella
+                If työkalu=TYÖK_LuoPeili Or työkalu=TYÖK_SiirräOsia Then
+                    EstäPeilinLuominen=False
+                    If MouseDown(1) Or MouseUp(1) Then
+                        x1=px1
+                        y1=py1
+                        x2=px2
+                        y2=py2
+                    Else
+                        x1=ToGridX(MouseX())
+                        y1=ToGridY(MouseY())
+                        x2=ToGridX(MouseX())
+                        y2=ToGridY(MouseY())
+                    End If
+                    aMax = Max(Abs(x2-x1),Abs(y2-y1))
+                    For a# = 0 To aMax
+                        pros# = a/aMax
+                        x=x1+(x2-x1)*pros
+                        y=y1+(y2-y1)*pros
+                        For e.Estoalueet = Each Estoalueet
+                            If x=>e\x And x<=e\x+e\w Then
+                                If y=>e\y And y<=e\y+e\h Then
+                                    If ((y>e\y+GridKoko Or x>e\x+GridKoko) And (y<e\y+e\h-GridKoko+1 Or x<e\x+e\w-GridKoko+1)) Or Työkalu=TYÖK_LuoPeili Then MuutaHiiri(1)
+                                    EstäPeilinLuominen=True
+                                End If
+                            End If
+                        Next e
+                    Next a#
+                End If
+            
+            'Työkalun vaihtaminen hiiren rullalla
+            mvz=MouseMoveZ()
+            If mvz<>0 And MouseDown(1)=False Then
+                Työkalu=Työkalu-mvz
+                If KenttäValmis Then tkmax=3 Else tkmax=8
+                If Työkalu<1 Then Työkalu=tkmax
+                If Työkalu>tkmax Then Työkalu=1
+                CheckRadioButton(RADIO_Työkalut,Työkalu)
+            End If
+            
+        
+            'Kentän muokkaus
+            'If MouseY()>20 And MouseY()<600-100 Then
+                If KeyHit(cbkey1) Then CheckRadioButton(RADIO_Työkalut,RADIO_Työkalu1)
+                If KeyHit(cbkey2) Then CheckRadioButton(RADIO_Työkalut,RADIO_Työkalu2)
+                If KeyHit(cbkey3) Then CheckRadioButton(RADIO_Työkalut,RADIO_Työkalu3)
+                If KenttäValmis=False Then
+                    If KeyHit(cbkey4) Then CheckRadioButton(RADIO_Työkalut,RADIO_Työkalu4)
+                    If KeyHit(cbkey5) Then CheckRadioButton(RADIO_Työkalut,RADIO_Työkalu5)
+                    If KeyHit(cbkey6) Then CheckRadioButton(RADIO_Työkalut,RADIO_Työkalu6)
+                    If KeyHit(cbkey7) Then CheckRadioButton(RADIO_Työkalut,RADIO_Työkalu7)
+                End If
+                
+                If MouseHit2() And MouseY() < 600-90 Then
+                    If työkalu=TYÖK_AsetaSäde 'Valonlähdetyökalu
                         If Not SiirräSädettä Then
                             mdist = Distance(MouseX(),MouseY(), SädeX,SädeY)
                             If mdist <= 15 And mdist => 5 Then SuuntaaValonlähdettä=True
                         End If
                         
-                    Case 2 'Peilityökalu
-                        if Peilejä<PeilejäKorkeintaan Or PeilejäKorkeintaan=0 Then px1=ToGrid(MouseX()) : py1=ToGrid(MouseY())
+                    ElseIf työkalu=TYÖK_LuoPeili 'Peilityökalu
+                        If Peilejä<PeilejäKorkeintaan Or PeilejäKorkeintaan=0 Then
+                            px1=ToGridX(MouseX()) : py1=ToGridY(MouseY())
+                            px2=px1 : py2=py1
+                        End If
                         
-                    Case 3 'Kohdetyökalu
-                        mx1 = ToGrid(MouseX())
-                        my1 = ToGrid(MouseY())
+                    ElseIf työkalu=TYÖK_LuoKohde 'Kohdetyökalu
+                        mx1 = ToGridX(MouseX())
+                        my1 = ToGridY(MouseY())
+                        mx2=mx1
+                        my2=my1
                         
-                    Case 4 'Poistotyökalu
-                        paripoistettu=False
+                    ElseIf työkalu=TYÖK_PoistaOsia 'Poistotyökalu
+                    
+                        'Peilit
+                        Peilipoistettu=False
                         For p.Peilit = Each Peilit
                             If LinesIntersect(MouseX(),MouseY()-4,MouseX(),MouseY()+4, p\x1,p\y1,p\x2,p\y2) Or LinesIntersect(MouseX()+4,MouseY(),MouseX()-4,MouseY(), p\x1,p\y1,p\x2,p\y2) Then
-                                If Not p\lukittu Then
+                                If p\lukittu=False Then
+                                    DeleteImage p\Img
                                     Delete p
-                                    paripoistettu=True
+                                    Peilipoistettu=True
                                     Peilejä-1
+                                    PeilitMuuttuneet=True
                                 End If
                             End If
                         Next p
-                        If Not paripoistettu Then
+                        
+                        'Kohteet
+                        If Not Peilipoistettu Then
                             KohdePoistettu=False
                             For m.Kohteet = Each Kohteet
                                 If MouseX()=>m\x And MouseX()<=m\x+m\w Then
                                     If MouseY()=>m\y And MouseY()<=m\y+m\h Then
-                                        If not m\lukittu Then
+                                        If m\lukittu=False Then
                                             Delete m
-                                            Maaleja-1
+                                            Kohteita-1
                                             KohdePoistettu=True
+                                            KoheetMuuttuneet=True
                                         End If
                                     End If
                                 End If
                             Next m
-                            
-                            If Not KohdePoistettu Then
-                                EstoaluePoistettu=False
-                                For e.Estoalueet = Each Estoalueet
-                                    If MouseX()=>e\x And MouseX()<=e\x+e\w Then
-                                        If MouseY()=>e\y And MouseY()<=e\y+e\h Then
-                                            If Not e\lukittu Then
-                                                Delete e
-                                                Estoalueita-1
-                                                EstoaluePoistettu=True
-                                            End If
-                                        End If
-                                    End If
-                                Next e
-                                
-                                If Not EstoaluePoistettu Then
-                                    For ee.Esteet = Each Esteet
-                                        If LinesIntersect(MouseX(),MouseY()-4,MouseX(),MouseY()+4, ee\x1,ee\y1,ee\x2,ee\y2) Or LinesIntersect(MouseX()+4,MouseY(),MouseX()-4,MouseY(), ee\x1,ee\y1,ee\x2,ee\y2) Then
-                                            If Not ee\lukittu Then
-                                                Delete ee
-                                                Esteitä-1
-                                            End If
-                                        End If
-                                    Next ee
-                                End If
-                            End If
                         End If
                         
-                    Case 5 'Siirtotyökalu
+                        'Estoalueet
+                        If Not (PeiliPoistettu Or KohdePoistettu) Then
+                            EstoaluePoistettu=False
+                            For e.Estoalueet = Each Estoalueet
+                                If MouseX()=>e\x And MouseX()<=e\x+e\w Then
+                                    If MouseY()=>e\y And MouseY()<=e\y+e\h Then
+                                        If e\lukittu=False And (TarkoitettuNumero=i Or TarkoitettuNumero=0) Then
+                                            Delete e
+                                            Estoalueita-1
+                                            EstoaluePoistettu=True
+                                            EstoalueetMuuttuneet=True
+                                        End If
+                                    End If
+                                End If
+                            Next e
+                        End If
+                        
+                        'Esteet
+                        If Not (PeiliPoistettu Or KohdePoistettu Or EstoaluePoistettu) Then
+                            EstePoistettu = False
+                            For ee.Esteet = Each Esteet
+                                If LinesIntersect(MouseX(),MouseY()-4,MouseX(),MouseY()+4, ee\x1,ee\y1,ee\x2,ee\y2) Or LinesIntersect(MouseX()+4,MouseY(),MouseX()-4,MouseY(), ee\x1,ee\y1,ee\x2,ee\y2) Then
+                                    If ee\lukittu=False Then
+                                        DeleteImage ee\Img
+                                        Delete ee
+                                        Esteitä-1
+                                        EstePoistettu = True
+                                        EsteetMuuttuneet=True
+                                    End If
+                                End If
+                            Next ee
+                        End If
+                        
+                        'Tekstit
+                        If Not (PeiliPoistettu Or KohdePoistettu Or EstoaluePoistettu Or EstePoistettu) Then
+                            For t.Tekstit = Each Tekstit
+                                If MouseX() >= t\x And MouseX() <= t\x+ImageWidth(t\Img) And MouseY() >= t\y And MouseY() <= t\y+ImageHeight(t\Img) Then
+                                    If Not KenttäValmis Then
+                                        DeleteImage t\Img
+                                        Delete t
+                                    End If
+                                End If
+                            Next t
+                        End If
+                        
+                    ElseIf työkalu=TYÖK_SiirräOsia 'Siirtotyökalu
                         SiirtoTyyppi$=""
-                        If Not EstäPeilinLuominen Then 'pätee myös siirtämiseen
+                        If EstäPeilinLuominen=False Then 'pätee myös siirtämiseen
                             For p.Peilit = Each Peilit
-                                If ToGrid(MouseX())=p\x1 And ToGrid(MouseY())=p\y1 And p\lukittu=False Then
-                                    'Aletaan siirtää pistettä 1
-                                    SiirtoTyyppi = "Peili1"
-                                    SiirtoId = ConvertToInteger(p)
-                                    SiirtoVanhaX=p\x1
-                                    SiirtoVanhaY=p\y1
-                                    Exit
-                                    
-                                ElseIf ToGrid(MouseX())=p\x2 And ToGrid(MouseY())=p\y2 And p\lukittu=False Then
-                                    'Aletaan siirtää pistettä 2
-                                    SiirtoTyyppi = "Peili2"
-                                    SiirtoId = ConvertToInteger(p)
-                                    SiirtoVanhaX=p\x2
-                                    SiirtoVanhaY=p\y2
-                                    Exit
+                                If p\lukittu=False And p\estetty=False Then
+                                    If ToGridX(MouseX())=p\x1 And ToGridY(MouseY())=p\y1 Then
+                                        'Aletaan siirtää pistettä 1
+                                        SiirtoTyyppi = "Peili1"
+                                        SiirtoId = ConvertToInteger(p)
+                                        SiirtoVanhaX=p\x1
+                                        SiirtoVanhaY=p\y1
+                                        Exit
+                                        
+                                    ElseIf ToGridX(MouseX())=p\x2 And ToGridY(MouseY())=p\y2 Then
+                                        'Aletaan siirtää pistettä 2
+                                        SiirtoTyyppi = "Peili2"
+                                        SiirtoId = ConvertToInteger(p)
+                                        SiirtoVanhaX=p\x2
+                                        SiirtoVanhaY=p\y2
+                                        Exit
+                                        
+                                    ElseIf LinesIntersect(MouseX(),MouseY()-4,MouseX(),MouseY()+4, p\x1,p\y1,p\x2,p\y2) Or LinesIntersect(MouseX()+4,MouseY(),MouseX()-4,MouseY(), p\x1,p\y1,p\x2,p\y2) Then
+                                        'Aletaan siirtää koko peiliä
+                                        SiirtoTyyppi="KokoPeili"
+                                        SiirtoId=ConvertToInteger(p)
+                                        SiirtoVanhaX1=p\x1
+                                        SiirtoVanhaY1=p\y1
+                                        SiirtoVanhaX2=p\x2
+                                        SiirtoVanhaY2=p\y2
+                                        SiirtoX1Ero=p\x1-MouseX()
+                                        SiirtoY1Ero=p\y1-MouseY()
+                                        SiirtoX2Ero=p\x2-MouseX()
+                                        SiirtoY2Ero=p\y2-MouseY()
+                                        Exit
+                                    End If
                                 End If
                             Next p
                         End If
                             
                         If SiirtoTyyppi="" Then
                             For k.Kohteet = Each Kohteet
-                                If ToGrid(MouseX())=k\x And ToGrid(MouseY())=k\y And k\lukittu=False Then
-                                    'Aletaan siirtää kohteen koordinaatteja
-                                    SiirtoTyyppi="Kohde1"
-                                    SiirtoId= ConvertToInteger(k)
-                                    Exit
-                                    
-                                ElseIf ToGrid(MouseX())=k\x+k\w And ToGrid(MouseY())=k\y+k\h And k\lukittu=False Then
-                                    'Aletaan smuuttaa kohteen kokoa
-                                    SiirtoTyyppi="Kohde2"
-                                    SiirtoId= ConvertToInteger(k)
-                                    Exit
+                                If k\lukittu=False And (TarkoitettuNumero=i Or TarkoitettuNumero=0) Then
+                                    If ToGridX(MouseX())=k\x And ToGridY(MouseY())=k\y Then
+                                        'Aletaan siirtää kohteen koordinaatteja
+                                        SiirtoTyyppi="Kohde1"
+                                        SiirtoId= ConvertToInteger(k)
+                                        Exit
+                                        
+                                    ElseIf ToGridX(MouseX())=k\x+k\w And ToGridY(MouseY())=k\y+k\h Then
+                                        'Aletaan smuuttaa kohteen kokoa
+                                        SiirtoTyyppi="Kohde2"
+                                        SiirtoId= ConvertToInteger(k)
+                                        Exit
+                                    End If
                                 End If
                             Next k
                         End If
                         
                         If SiirtoTyyppi="" Then
                             For ee.Esteet = Each Esteet
-                                If ToGrid(MouseX())=ee\x1 And ToGrid(MouseY())=ee\y1 And ee\lukittu=False Then
-                                    'Aletaan siirtää pistettä 1
-                                    SiirtoTyyppi = "Este1"
-                                    SiirtoId = ConvertToInteger(ee)
-                                    Exit
-                                    
-                                ElseIf ToGrid(MouseX())=ee\x2 And ToGrid(MouseY())=ee\y2 And ee\lukittu=False Then
-                                    'Aletaan siirtää pistettä 2
-                                    SiirtoTyyppi = "Este2"
-                                    SiirtoId = ConvertToInteger(ee)
-                                    Exit
+                                If ee\lukittu=False Then
+                                    If ToGridX(MouseX())=ee\x1 And ToGridY(MouseY())=ee\y1 Then
+                                        'Aletaan siirtää pistettä 1
+                                        SiirtoTyyppi = "Este1"
+                                        SiirtoId = ConvertToInteger(ee)
+                                        Exit
+                                        
+                                    ElseIf ToGridX(MouseX())=ee\x2 And ToGridY(MouseY())=ee\y2 Then
+                                        'Aletaan siirtää pistettä 2
+                                        SiirtoTyyppi = "Este2"
+                                        SiirtoId = ConvertToInteger(ee)
+                                        Exit
+                                        
+                                    ElseIf LinesIntersect(MouseX(),MouseY()-4,MouseX(),MouseY()+4, ee\x1,ee\y1,ee\x2,ee\y2) Or LinesIntersect(MouseX()+4,MouseY(),MouseX()-4,MouseY(), ee\x1,ee\y1,ee\x2,ee\y2) Then
+                                        'Aletaan siirtää koko estettä
+                                        SiirtoTyyppi="KokoEste"
+                                        SiirtoId=ConvertToInteger(ee)
+                                        SiirtoVanhaX1=ee\x1
+                                        SiirtoVanhaY1=ee\y1
+                                        SiirtoVanhaX2=ee\x2
+                                        SiirtoVanhaY2=ee\y2
+                                        SiirtoX1Ero=ee\x1-MouseX()
+                                        SiirtoY1Ero=ee\y1-MouseY()
+                                        SiirtoX2Ero=ee\x2-MouseX()
+                                        SiirtoY2Ero=ee\y2-MouseY()
+                                        Exit
+                                    End If
                                 End If
                             Next ee
                         End If
                         
                         If SiirtoTyyppi="" Then
                             For e.Estoalueet = Each Estoalueet
-                                If ToGrid(MouseX())=e\x And ToGrid(MouseY())=e\y And e\lukittu=False Then
-                                    'Aletaan siirtää estoalueen koordinaatteja
-                                    SiirtoTyyppi="Estoalue1"
-                                    SiirtoId= ConvertToInteger(e)
-                                    Exit
-                                    
-                                ElseIf ToGrid(MouseX())=e\x+e\w And ToGrid(MouseY())=e\y+e\h And e\lukittu=False Then
-                                    'Aletaan muuttaa estoalueen kokoa
-                                    SiirtoTyyppi="Estoalue2"
-                                    SiirtoId= ConvertToInteger(e)
-                                    Exit
+                                If e\lukittu=False Then
+                                    If ToGridX(MouseX())=e\x And ToGridY(MouseY())=e\y And e\lukittu=False Then
+                                        'Aletaan siirtää estoalueen koordinaatteja
+                                        SiirtoTyyppi="Estoalue1"
+                                        SiirtoId= ConvertToInteger(e)
+                                        Exit
+                                        
+                                    ElseIf ToGridX(MouseX())=e\x+e\w And ToGridY(MouseY())=e\y+e\h And e\lukittu=False Then
+                                        'Aletaan muuttaa estoalueen kokoa
+                                        SiirtoTyyppi="Estoalue2"
+                                        SiirtoId= ConvertToInteger(e)
+                                        Exit
+                                    End If
                                 End If
                             Next e
                         End If
                         
-                    Case 6 'Estetyökalu
-                        ex1 = ToGrid(MouseX())
-                        ey1 = ToGrid(MouseY())
+                        'Tekstit
+                        If SiirtoTyyppi="" Then
+                            If Not KenttäValmis Then
+                                For t.Tekstit = Each Tekstit
+                                    If MouseX() >= t\x And MouseX() <= t\x+ImageWidth(t\Img) And MouseY() >= t\y And MouseY() <= t\y+ImageHeight(t\Img) Then
+                                        SiirtoTyyppi="Teksti"
+                                        SiirtoId = ConvertToInteger(t)
+                                        Exit
+                                    End If
+                                Next t
+                            End If
+                        End If
                         
-                    Case 7 'Estoaluetyökalu
-                        eax1 = ToGrid(MouseX())
-                        eay1 = ToGrid(MouseY())
-                End Select
-            End If
-            
-            If MouseDown(1) Then
-                Select työkalu
-                    Case 1 'Lähtötyökalu
+                    ElseIf työkalu=TYÖK_LuoEste 'Estetyökalu
+                        ex1 = ToGridX(MouseX())
+                        ey1 = ToGridY(MouseY())
+                        
+                    ElseIf työkalu=TYÖK_LuoEstoalue 'Estoaluetyökalu
+                        eax1 = ToGridX(MouseX())
+                        eay1 = ToGridY(MouseY())
+                        
+                    ElseIf työkalu=TYÖK_KirjoitaTeksti 'Tekstin kirjoitustyökalu
+                        MuokattiinVanhaaTekstiä=False
+                        For t.tekstit = Each Tekstit
+                            If MouseX() >= t\x And MouseX() <= t\x+ImageWidth(t\Img) And MouseY() >= t\y And MouseY() <= t\y+ImageHeight(t\Img) Then
+                                TekstilaatikkoTxt = t\Teksti
+                                TekstilaatikkoLeveys = t\W
+                                ok = KirjoitaTeksti(ON)
+                                If ok Then
+                                    t\Teksti = TekstilaatikkoTxt
+                                    t\w = TekstilaatikkoLeveys
+                                    PäivitäGrafiikka(3)
+                                End If
+                                MuokattiinVanhaaTekstiä=True
+                                Exit
+                            End If
+                        Next t
+                        
+                        If Not MuokattiinVanhaaTekstiä Then
+                            x = MouseX()
+                            y = MouseY()
+                            ok = KirjoitaTeksti()
+                            If ok Then
+                                t.Tekstit = New(Tekstit)
+                                t\x = x
+                                t\y = y
+                                t\Teksti = TekstilaatikkoTxt
+                                t\w = TekstilaatikkoLeveys
+                                PäivitäGrafiikka(3)
+                            End If
+                        End If
+                    End If
+                End If
+                
+                If MouseDown(1)And MouseY()< 600-90 Then
+                    If Työkalu=TYÖK_AsetaSäde 'Lähtötyökalu
                         If SuuntaaValonlähdettä Then
                             SädeDir = GetAngle(SädeX,SädeY, MouseX(),MouseY())
                             If KeyDown(cbkeylcontrol)=False And KeyDown(cbkeyrcontrol)=False Then SädeDir=SädeDir/5*5
@@ -322,23 +818,33 @@ HotSpot ValonKierrätys, ImageWidth(ValonKierrätys)/2,ImageHeight(ValonKierrätys)
                                 SiirräSädettä=True
                                 SädeX=MouseX()
                                 SädeY=MouseY()
+                                If KeyDown(cbkeylcontrol) Or KeyDown(cbkeyrcontrol) Then
+                                    SädeX=ToGridX(SädeX)
+                                    SädeY=ToGridY(SädeY)
+                                End If
                                 SädeOlemassa=True
                             End If
                         End If
                         
-                    Case 2 'Peilityökalu
+                    ElseIf Työkalu=TYÖK_LuoPeili 'Peilityökalu
                         If Peilejä<PeilejäKorkeintaan Or PeilejäKorkeintaan=0
-                            px2=ToGrid(MouseX())
-                            py2=ToGrid(MouseY())
+                            px2=ToGridX(MouseX())
+                            py2=ToGridY(MouseY())
+                            If PeilinPituusKorkeintaan>0 Then
+                                dist#=Distance(px1,py1, px2,py2)
+                                If dist>PeilinPituusKorkeintaan Then
+                                    ang#=GetAngle(px1,py1, px2,py2)
+                                    px2=ToGridX(px1+Cos(ang)*PeilinPituusKorkeintaan)
+                                    py2=ToGridY(py1-Sin(ang)*PeilinPituusKorkeintaan)
+                                End If
+                            End If
                             Color 255,0,0
                             Line x1,y1, x2,y2
                         End If
                         
-                    Case 3 'Kohdetyökalu
-                        mx2 = ToGrid(MouseX())
-                        my2 = ToGrid(MouseY())
-                        If mx1=0 Then mx1=mx2
-                        If my1=0 Then my1=my2
+                    ElseIf Työkalu=TYÖK_LuoKohde 'Kohdetyökalu
+                        mx2 = ToGridX(MouseX())
+                        my2 = ToGridY(MouseY())
                         mx = Min(mx1,mx2)
                         my = Min(my1,my2)
                         mw = Distance(mx1,0,mx2,0)
@@ -346,75 +852,144 @@ HotSpot ValonKierrätys, ImageWidth(ValonKierrätys)/2,ImageHeight(ValonKierrätys)
                         Color 255,0,0
                         Box mx,my,mw,mh
                         
-                    Case 5 'Siirtotyökalu
+                    ElseIf Työkalu=TYÖK_SiirräOsia 'Siirtotyökalu
                         If SiirtoTyyppi = "Peili1" Then
+                            p = ConvertToType(SiirtoId)
                             If Not EstäPeilinLuominen Then
-                                p = ConvertToType(SiirtoId)
-                                p\x1 = ToGrid(MouseX())
-                                p\y1 = ToGrid(MouseY())
+                                p\x1 = ToGridX(MouseX())
+                                p\y1 = ToGridY(MouseY())
+                                If PeilinPituusKorkeintaan>0 Then
+                                    dist#=Distance(p\x1,p\y1, p\x2,p\y2)
+                                    If dist>PeilinPituusKorkeintaan Then
+                                        ang#=GetAngle(p\x1,p\y1, p\x2,p\y2)
+                                        p\x1=ToGridX(p\x2-Cos(ang)*PeilinPituusKorkeintaan)
+                                        p\y1=ToGridY(p\y2+Sin(ang)*PeilinPituusKorkeintaan)
+                                    End If
+                                End If
+                                PeilitMuuttuneet=True
                             Else
                                 p\x1=SiirtoVanhaX
                                 p\y1=SiirtoVanhaY
+                                PeilitMuuttuneet=True
                             End If
-                            px1=ToGrid(MouseX())
-                            py1=ToGrid(MouseY())
+                            px1=ToGridX(MouseX())
+                            py1=ToGridY(MouseY())
                             px2=p\x2
                             py2=p\y2
+                            PäivitäGrafiikka(1)
                         ElseIf SiirtoTyyppi="Peili2" Then
+                            p = ConvertToType(SiirtoId)
                             If Not EstäPeilinLuominen Then
-                                p = ConvertToType(SiirtoId)
-                                p\x2 = ToGrid(MouseX())
-                                p\y2 = ToGrid(MouseY())
+                                p\x2 = ToGridX(MouseX())
+                                p\y2 = ToGridY(MouseY())
+                                If PeilinPituusKorkeintaan>0 Then
+                                    dist#=Distance(p\x1,p\y1, p\x2,p\y2)
+                                    If dist>PeilinPituusKorkeintaan Then
+                                        ang#=GetAngle(p\x1,p\y1, p\x2,p\y2)
+                                        p\x2=ToGridX(p\x1+Cos(ang)*PeilinPituusKorkeintaan)
+                                        p\y2=ToGridY(p\y1-Sin(ang)*PeilinPituusKorkeintaan)
+                                    End If
+                                End If
                             Else
                                 p\x2=SiirtoVanhaX
                                 p\y2=SiirtoVanhaY
                             End If
-                            px2=ToGrid(MouseX())
-                            py2=ToGrid(MouseY())
+                            px2=ToGridX(MouseX())
+                            py2=ToGridY(MouseY())
                             px1=p\x1
                             py1=p\y1
+                            PeilitMuuttuneet=True
+                            PäivitäGrafiikka(1)
+                        ElseIf SiirtoTyyppi="KokoPeili" Then
+                            p = ConvertToType(SiirtoId)
+                            If Not EstäPeilinLuominen Then
+                                If MouseY()+SiirtoY1Ero=>20 And MouseY()+SiirtoY1Ero<600-100 And MouseY()+SiirtoY2Ero=>20 And MouseY()+SiirtoY2Ero<600-100 Then
+                                    If MouseX()+SiirtoX1Ero=>0 And MouseX()+SiirtoX1Ero<=800 And MouseX()+SiirtoX2Ero=>0 And MouseX()+SiirtoX2Ero<=800 Then
+                                        p\x1=ToGridX(MouseX()+SiirtoX1Ero)
+                                        p\y1=ToGridY(MouseY()+SiirtoY1Ero)
+                                        p\x2=ToGridX(MouseX()+SiirtoX2Ero)
+                                        p\y2=ToGridY(MouseY()+SiirtoY2Ero)
+                                    End If
+                                End If
+                            Else
+                                p\x1=SiirtoVanhaX1
+                                p\y1=SiirtoVanhaY1
+                                p\x2=SiirtoVanhaX2
+                                p\y2=SiirtoVanhaY2
+                            End If
+                            px1=ToGridX(MouseX()+SiirtoX1Ero)
+                            py1=ToGridY(MouseY()+SiirtoY1Ero)
+                            px2=ToGridX(MouseX()+SiirtoX2Ero)
+                            py2=ToGridY(MouseY()+SiirtoY2Ero)
+                            PeilitMuuttuneet=True
+                            PäivitäGrafiikka(1)
                             
                         ElseIf SiirtoTyyppi="Kohde1" Then
                             k = ConvertToType(SiirtoId)
-                            k\x = ToGrid(MouseX())
-                            k\y = ToGrid(MouseY())
+                            k\x = ToGridX(MouseX())
+                            k\y = ToGridY(MouseY())
+                            KohteetMuuttuneet=True
                         ElseIf SiirtoTyyppi="Kohde2" Then
                             k = ConvertToType(SiirtoId)
-                            k\w = ToGrid(MouseX())-k\x
-                            k\h = ToGrid(MouseY())-k\y
+                            k\w = ToGridX(MouseX())-k\x
+                            k\h = ToGridY(MouseY())-k\y
                             If k\w<GridKoko Then k\w=GridKoko
                             If k\h<GridKoko Then k\h=GridKoko
+                            KohteetMuuttuneet=True
                             
                         ElseIf SiirtoTyyppi = "Este1" Then
                             ee = ConvertToType(SiirtoId)
-                            ee\x1 = ToGrid(MouseX())
-                            ee\y1 = ToGrid(MouseY())                            
+                            ee\x1 = ToGridX(MouseX())
+                            ee\y1 = ToGridY(MouseY())
+                            EsteetMuuttuneet=True
+                            PäivitäGrafiikka(2)
                         ElseIf SiirtoTyyppi="Este2" Then
                             ee = ConvertToType(SiirtoId)
-                            ee\x2 = ToGrid(MouseX())
-                            ee\y2 = ToGrid(MouseY())
+                            ee\x2 = ToGridX(MouseX())
+                            ee\y2 = ToGridY(MouseY())
+                            EsteetMuuttuneet=True
+                            PäivitäGrafiikka(2)
+                        ElseIf SiirtoTyyppi="KokoEste" Then
+                            ee = ConvertToType(SiirtoId)
+                            If MouseY()+SiirtoY1Ero=>20 And MouseY()+SiirtoY1Ero<600-100 And MouseY()+SiirtoY2Ero=>20 And MouseY()+SiirtoY2Ero<600-100 Then
+                                If MouseX()+SiirtoX1Ero=>0 And MouseX()+SiirtoX1Ero<=800 And MouseX()+SiirtoX2Ero=>0 And MouseX()+SiirtoX2Ero<=800 Then
+                                    ee\x1=ToGridX(MouseX()+SiirtoX1Ero)
+                                    ee\y1=ToGridY(MouseY()+SiirtoY1Ero)
+                                    ee\x2=ToGridX(MouseX()+SiirtoX2Ero)
+                                    ee\y2=ToGridY(MouseY()+SiirtoY2Ero)
+                                End If
+                            End If
+                            EsteetMuuttuneet=True
+                            PäivitäGrafiikka(2)
                         
                         ElseIf SiirtoTyyppi="Estoalue1" Then
                             e = ConvertToType(SiirtoId)
-                            e\x = ToGrid(MouseX())
-                            e\y = ToGrid(MouseY())
+                            e\x = ToGridX(MouseX())
+                            e\y = ToGridY(MouseY())
+                            EstoalueetMuuttuneet=True
                         ElseIf SiirtoTyyppi="Estoalue2" Then
                             e = ConvertToType(SiirtoId)
-                            e\w = ToGrid(MouseX())-e\x
-                            e\h = ToGrid(MouseY())-e\y
+                            e\w = ToGridX(MouseX())-e\x
+                            e\h = ToGridY(MouseY())-e\y
                             If e\w<GridKoko Then e\w=GridKoko
                             If e\h<GridKoko Then e\h=GridKoko
+                            EstoalueetMuuttuneet=True
+                            
+                        ElseIf SiirtoTyyppi="Teksti" Then
+                            t = ConvertToType(SiirtoId)
+                            t\x = MouseX()
+                            t\y = MouseY()
                         End If
                         
-                    Case 6 'Estetyökalu
-                        ex2 = ToGrid(MouseX())
-                        ey2 = ToGrid(MouseY())
+                    ElseIf Työkalu=TYÖK_LuoEste 'Estetyökalu
+                        ex2 = ToGridX(MouseX())
+                        ey2 = ToGridY(MouseY())
                         Color cbblackskin
                         Line ex1,ey1, ex2,ey2
                     
-                    Case 7 'Estoaluetyökalu
-                        eax2 = ToGrid(MouseX())
-                        eay2 = ToGrid(MouseY())
+                    ElseIf Työkalu=TYÖK_LuoEstoalue 'Estoaluetyökalu
+                        eax2 = ToGridX(MouseX())
+                        eay2 = ToGridY(MouseY())
                         If eax1=0 Then eax1=eax2
                         If eay1=0 Then eay1=eay2
                         eax=Min(eax1,eax2)
@@ -423,269 +998,513 @@ HotSpot ValonKierrätys, ImageWidth(ValonKierrätys)/2,ImageHeight(ValonKierrätys)
                         eah=Distance(eay1,0,eay2,0)
                         Color cbdarkred
                         Box eax,eay,eaw,eah,OFF
-                End Select
-            Else
-                SuuntaaValonlähdettä=False
-                SiirräSädettä=False
-            End If
-            
-            If MouseUp(1) Then
-                Select työkalu
-                    
-                    Case 2 'Peilityökalu
+                    End If
+                Else
+                    SuuntaaValonlähdettä=False
+                    SiirräSädettä=False
+                End If
+                
+                If MouseUp(1) And MouseY()>20 And MouseY()<600-100 Then
+                    If Työkalu=TYÖK_LuoPeili 'Peilityökalu
                         If EstäPeilinLuominen=False And (Peilejä<PeilejäKorkeintaan Or PeilejäKorkeintaan=0) Then
-                            If (px1<>px2 Or py1<>py2) Then LuoPari(px1,py1, px2,py2)
+                            If Not KenttäValmis Then SaaTallentaa=True Else SaaTallentaa=False
+                            If (px1<>px2 Or py1<>py2) Then LuoPeili(px1,py1, px2,py2, OFF,SaaTallentaa) : PäivitäGrafiikka(1)
                         Else
                             px1=0:px2=0:py1=0:py2=0
                         End If
                         
-                    Case 3 'Kohdeyökalu
+                    ElseIf Työkalu=TYÖK_LuoKohde 'Kohdetyökalu
                         If mw>0 And mh>0 Then LuoMaali(mx,my,mw,mh)
                         
-                    Case 5 'Siirtotyökalu
+                    ElseIf Työkalu=TYÖK_SiirräOsia 'Siirtotyökalu
                         SiirtoTyyppi$=""
                         px1=0:py1=0:px2=0:py2=0
                         
-                    Case 6 'Estetyökalu
-                        If (ex1<>ex2 Or ey1<>ey2) Then LuoEste(ex1,ey1, ex2,ey2)
+                    ElseIf Työkalu=TYÖK_LuoEste 'Estetyökalu
+                        If (ex1<>ex2 Or ey1<>ey2) Then LuoEste(ex1,ey1, ex2,ey2) : PäivitäGrafiikka(2)
                         
-                    Case 7 'Estoaluetyökalu
+                    ElseIf Työkalu=TYÖK_LuoEstoalue 'Estoaluetyökalu
                         If eaw>0 And eah>0 Then LuoEstoalue(eax,eay,eaw,eah)
-                End Select
-            End If
-        End If
-        
-        'Piirretään asioita
-            PiirräEstoalueet()
-            'Color 0,255,0
-            PiirräKohteet()
-            'Color 0,0,255
-            PiirräEsteet()
-            PiirräPeilit()
-            PiirräValonlähde()
-            
-        'Pallukkakursori
-            If MouseY()>20 And MouseY()<ScreenHeight()-100 Then
-                Color 255,0,0
-                If työkalu<>1 And työkalu<>4 Then
-                    Circle ToGrid(MouseX())-2,ToGrid(MouseY())-2,4
+                    End If
+                    TarkoitettuNumero=0
                 End If
+            'End If
+            
+            'Piirretään asioita
+				PiirräKohteet()
+				PiirräEstoalueet()
+                PiirräTekstit()
+                PiirräPeilit()
+                PiirräEsteet()
+                PiirräValonlähde()
+                
+            'Pallukkakursori
+                If MouseY()>20 And MouseY()<600-100 Then
+                    Color 100,100,100
+                    If työkalu<>TYÖK_AsetaSäde And työkalu<>TYÖK_PoistaOsia And työkalu<>TYÖK_KirjoitaTeksti Then
+                        Circle ToGridX(MouseX())-2,ToGridY(MouseY())-2,4
+                    End If
+                End If
+                
+            IlmPeilMaxRaja=0
+            If Työkalu=TYÖK_LuoPeili And Peilejä=>PeilejäKorkeintaan And PeilejäKorkeintaan>0 And MouseY()>20 And MouseY()<600-100 Then IlmPeilMaxRaja=1
+            If timer()<TMR_KenttäLadattu+5000+5000*(PeilinPituusKorkeintaan>0) And PeilejäKorkeintaan>0 Then
+                IlmPeilMaxRaja=2
+                If Not IlmPeilSoitettu Then 
+                    IlmPeilSoitettu=True
+                    Ääni("Ilmoitus.wav")
+                End If
+            Else
+                IlmPeilSoitettu=False
+            End If
+            If IlmPeilMaxRaja>0 Then
+                if IlmPeilMaxRaja=1 Then MuutaHiiri(1)
+                w=350
+                h=50
+                x=800/2-w/2
+                y=50
+                Color cbgold
+                Box x,y,w,h
+                Color cbblackskin
+                Box x,y,w,h, OFF
+                Color cbblack
+                Text x+5,y+5, "Voit luoda tässä kentässä korkeintaan"
+                Text x+5,y+25, Number(PeilejäKorkeintaan-Peilejä)+" uutta peiliä."
             End If
             
-        If Työkalu=2 And Peilejä=>PeilejäKorkeintaan And PeilejäKorkeintaan>0 Then MuutaHiiri(1)
-            
-        'Valonlähteenkierrätyksen näyttävä merkki
-            If Työkalu=1 And SiirräSädettä=False Then
-                mdist = Distance(MouseX(),MouseY(), SädeX,SädeY)
-                If (mdist <= 15 And mdist => 5) Or SuuntaaValonlähdettä Then DrawImage ValonKierrätys, SädeX,SädeY
+            If timer()<TMR_KenttäLadattu+5000+5000*(PeilejäKorkeintaan>0) And PeilinPituusKorkeintaan>0 Then
+                If IlmPeilSoitettu=False And IlmPeilPitSoitettu=False Then
+                    'Jos peilien maksimimäärä-kohdassa ei soitettu ääntä, eikä myöskään tässä kohdassa jo aiemmin
+                    IlmPeilPitSoitettu=True
+                    Ääni("Ilmoitus.wav")
+                End If
+                w=350
+                h=50
+                x=800/2-w/2
+                y=150
+                Color cbgold
+                Box x,y,w,h
+                Color cbblackskin
+                Box x,y,w,h, OFF
+                Color cbblack
+                Text x+5,y+5, "Yhden peilin maksimikokoa "+Lower("ON")
+                Text x+5,y+25, "rajoitettu tässä kentässä."
+            Else
+                IlmPeilPitSoitettu=False
             End If
-        
-        PäivitäMusiikki()
-        DrawScreen
-    Forever
+                
+            'Valonlähteenkierrätyksen näyttävä merkki
+                If Työkalu=TYÖK_AsetaSäde And SiirräSädettä=False Then
+                    mdist = Distance(MouseX(),MouseY(), SädeX,SädeY)
+                    If (mdist <= 15 And mdist => 5) Or SuuntaaValonlähdettä Then DrawImage ValonKierrätys, SädeX,SädeY
+                End If
+                
+            lopeta=Ulkoasu(ULK_Editori,VainValmiitKentät)
+            If lopeta Then Return False 'Ulkoasu()-funktion sisältämä käyttöliittymä käskee poistua päävalikkoon
+            
+            PäivitäMusiikki()
+            DrawScreen
+            UpdateMouseHit2()
+        Forever
+    End Function
 
-Function LuoPari(x1,y1,x2,y2,lukittu=0)
-    p.Peilit = New(Peilit)
-    p\x1=x1
-    p\x2=x2
-    p\y1=y1
-    p\y2=y2
-    p\lukittu=lukittu
-    Peilejä+1
-    If lukittu Then LukittujaOsia+1
+//Muut funktiot:
+Function LuoPeili(x1,y1,x2,y2,lukittu=0,saatallentaa=1)
+    For p.Peilit = Each Peilit
+        If p\x1=x1 And p\y1=y1 And p\x2=x2 And p\y2=y2 Then ÄläLuo=True
+        If p\x1=x2 And p\y1=y2 And p\x2=x1 And p\y2=y1 Then ÄläLuo=True
+    Next p
+    If Not ÄläLuo Then
+        p.Peilit = New(Peilit)
+        p\x1=x1
+        p\x2=x2
+        p\y1=y1
+        p\y2=y2
+        p\lukittu=lukittu
+        p\SaaTallentaa=saatallentaa
+        Peilejä+1
+        If lukittu Then LukittujaOsia+1
+        PeilitMuuttuneet=True
+    End If
 End Function
 
 Function PiirräPeilit()
-    For p.Peilit = Each Peilit
-        Color cbblue
-        vr=56:vg=62:vb=184
-        väritys=False
-        If LinesIntersect(MouseX(),MouseY()-4,MouseX(),MouseY()+4, p\x1,p\y1,p\x2,p\y2) Or LinesIntersect(MouseX()+4,MouseY(),MouseX()-4,MouseY(), p\x1,p\y1,p\x2,p\y2) Then
-            if Työkalu = 4 Then
-                If p\lukittu=False Then
-                    väritys=True
-                Else
-                    MuutaHiiri(1)
+    If PeilitMuuttuneet Then
+        If PeilitImg>0 Then DeleteImage PeilitImg
+        If PeilitLukkoImg>0 Then DeleteImage PeilitLukkoImg
+        PeilitImg = MakeImage(800,600)
+        PeilitLukkoImg = MakeImage(800,600)
+        DrawToImage PeilitImg
+        For p.Peilit = Each Peilit
+            img=p\Img
+            If img <>0 Then
+                DrawImage img, min(p\x1,p\x2)-10,min(p\y1,p\y2)-10
+                If p\lukittu Then
+                    DrawToImage PeilitLukkoImg
+                    DrawImage img, Min(p\x1,p\x2)-10,min(p\y1,p\y2)-10
+                    DrawToImage PeilitImg
                 End If
+            Else
+                Color cbwhite : Line p\x1,p\y1, p\x2,p\y2
             End If
-        End If
-        If Työkalu=5 And ((ToGrid(MouseX())=p\x1 And ToGrid(MouseY())=p\y1) Or (ToGrid(MouseX())=p\x2 And ToGrid(MouseY())=p\y2)) Then
-            estä=False
-            For e.Estoalueet = Each Estoalueet
-                If (p\x1=>e\x And p\x1<=e\x+e\w And p\y1=>e\y And p\y1<=e\y+e\h) Or (p\x2=>e\x And p\x2<=e\x+e\w And p\y2=>e\y And p\y2<=e\y+e\h) Then
-                    estä=True
-                    MuutaHiiri(1)
-                End If
-            Next e
-            if not estä then väritys=True
-        End If
-        If väritys Then
-            Color cbgreen
-            vr=96:vg=127:vb=13
-            MuutaHiiri(0)
-        End If
-        Viiva(p\x1,p\y1, p\x2,p\y2,vr,vg,vb)
-    Next p
+        Next p
+        DrawToScreen
+        PeilitMuuttuneet=False
+    End If
+    if PeilitImg>0 then DrawImage PeilitImg,0,0
 End Function
 
 Function PiirräSäde()
+    tausta=KaappaaKuva()
+    //Laskee valonsäteen radan ja piirtää siitä valmiin kuvan tietokoneen muistiin
+    
     Aloitusaika=Timer()
-    Osumia=0
-    OsumiaEnintäänYhdessäPeilissä=0
-    KuljettuMatka=0
-    SunBEAMError=""
-    DrawToImage SunBeam
-    Color 0,0,0
-    Box 0,0,ScreenWidth(),ScreenHeight()
-    Color cbyellow
-    For m.Kohteet = Each Kohteet
-        m\täytetty=False
-    Next m
-    For p.Peilit = Each Peilit
-        p\osumia=0
-    Next p
-    TäytettyjäMaaleja=0
     If SädeOlemassa Then
-        x#=SädeX
-        y#=SädeY
-        d#=SädeDir
-        lopeta=Timer()+300000
-        While x=>0 And y=>0 And x<=ScreenWidth() And y<=ScreenHeight() And Timer()<lopeta And TäytettyjäMaaleja < Maaleja
-            vx#=x
-            vy#=y
-            x=x+Cos(d)*60 'tämän on oltava jaollinen alempana olevalla STEP-luvulla!
-            y=y-Sin(d)*60 'tämä myös - muuten valonsädegrafiikka bugaa
-            iMax = Max(Abs(x-vx),Abs(y-vy))
-            For i# = 0 To iMax Step 1 'Mitä pienempi STEP, sitä tarkempi tarkastus on; ja mitä suurempi, sitä hitaampi tarkastus on.
-                pros#=i/iMax
-                viX#=iX#
-                viY#=iY#
-                iX = vx+(x-vx)*pros : If viX=0 Then viX=iX
-                iY = vy+(y-vy)*pros : If viY=0 Then viY=iY
-                OsuttuPeiliin=False
+        //Alkujärjestelyt
+            Osumia=0
+            OsumiaEnintäänYhdessäPeilissä=0
+            KuljettuMatka=0
+            TäytettyjäKohteita=0
+            SunBEAMError=""
+            DrawToImage SunBEAM
+            Color 0,0,0                             'Pyyhitään vanha
+            Box 0,0,800,600    'kuva pois
+            For m.Kohteet = Each Kohteet
+                m\täytetty=False
+            Next m
+            For p.Peilit = Each Peilit
+                p\osumia=0 'nollataan samalla peilien osumalaskurit
+            Next p
+            x#=SädeX
+            y#=SädeY
+            d#=SädeDir
+            lopeta=Timer()+Varoaika
+            DrawToImage SunBeam
+            
+        //Lasketaan valon rata minne se meneekään, mutta keskeytetään, jos aikaa on kulunut enemmän kuin lopeta-muuttujan arvo on
+            AlustaIkkuna()
+            While x=>0 And y=>0 And x<=800 And y<=600 And Timer()<lopeta And TäytettyjäKohteita < Kohteita
+                vx#=x
+                vy#=y
+                x=x+Cos(d)*1000 'kerroin on suoraan kuljettava matka, jonka kääntämistarve
+                y=y-Sin(d)*1000 'tullaan tarkistamaan alemmassa for-lenkissä
+                    
+                'Latauksen näyttäminen näytöllä
+                DrawToScreen
+                DrawImage tausta, 0,0
+                Ikkuna("Odota hetki...",400,50)
+                Text IkkunaX+5,IkkunaY+28, "Lasken... "+Round((Timer()-Aloitusaika*1.0)/1000,2)+" s"
+                Text IkkunaX+150,IkkunaY+28, "("+Varoaika/1000+" s korkeintaan)"
+                DrawScreen
+                DrawToImage SunBEAM
+                    
+                TörmäysX=0
+                TörmäysY=0
+                'Käydään läpi esteet
+                For e.Esteet = Each Esteet
+                    If LinesIntersect(vx,vy, x,y, e\x1,e\y1, e\x2,e\y2) Then
+                        dist# = Distance(vx,vy, IntersX,IntersY)
+                        If dist<TörmäysDist# Or TörmäysTapahtui=False Then
+                            TörmäysTapahtui=True
+                            TörmäysDist=dist
+                            TörmäysX=IntersX
+                            TörmäysY=IntersY
+                            TörmäysKohde=ConvertToInteger(e)
+                            TörmäysSamatLinjat=LinesOnTop
+                            TörmäysTyyppi$="este"
+                        End If
+                    End If
+                Next e
+                    
+                'Käydään läpi peilit
+                ÄläSiirräJatkopaikkaa=False
                 For p.Peilit = Each Peilit
-                    If LinesIntersect(viX,viY, iX,iY, p\x1,p\y1, p\x2,p\y2) Then
-                        OsuttuPeiliin=True
-                        iX=IntersX-Cos(d) : x=iX
-                        iY=IntersY+Sin(d) : y=iY
-                        Circle iX-2,iY-2,4
-                        PeiliDir# = GetAngle(p\x1,p\y1, p\x2,p\y2)
-                        d = PeiliDir-(d-PeiliDir)
-                        If d < 0   Then d+360
-                        If d > 360 Then d-360
-                        Osumia+1
-                        p\osumia = p\osumia + 1
-                        If p\osumia > OsumiaEnintäänYhdessäPeilissä Then OsumiaEnintäänYhdessäPeilissä = p\osumia
-                        i=iMax 'poistutaan KOHTA i-forista
-                        Exit 'poistutaan p-forista
+                    PAng = GetAngle(p\x1,p\y1, p\x2,p\y2)
+                    If LinesIntersect(vx+Cos(d),vy-Sin(d), x,y, p\x1-Cos(PAng),p\y1+Sin(PAng), p\x2+Cos(PAng),p\y2-Sin(PAng)) Then
+                        dist# = Distance(vx,vy, IntersX,IntersY)
+                        'Tarkistetaan, onko peili lähempänä kuin aikaisemmin huomattu peili
+                        'TAI eikö aiempia osumia (tällä pätkällä) ole
+                        'TAI onko peiliin aiemmin osuttu näissä koordinaateissa
+                        'JA että peili ei ole merkitty sivuutettavaksi
+                        If (dist<TörmäysDist# Or TörmäysTapahtui=False Or (int(IntersX)=TörmäysX And Int(IntersY)=TörmäysY And TörmäysTyyppi="peili")) And p<>IgnoreId.Peilit Then
+                            TörmäysDist=dist
+                            MoneenkoPeiliinOsuttiin+1
+                            TörmäysSamatLinjat=LinesOnTop
+                            If Int(IntersX)<>TörmäysX Or Int(IntersY)<>TörmäysY Or TörmäysTapahtui=False Then
+                                'Samassa pisteessä törmätään vain yhteen peiliin
+                                'TAI seuraavia peilejä ei ole vielä huomattu
+                                TörmäyskohteenKulma=WrapAngle180(GetAngle(p\x1,p\y1, p\x2,p\y2))
+                                MoneenkoPeiliinOsuttiin=1
+                            ElseIf Int(IntersX)=TörmäysX And Int(IntersY)=TörmäysY
+                                'Samassa pisteessä törmätään useaan peiliin
+                                '(kaikkia samassa pisteessä olevia peilejä ei kuitenkaan
+                                'huomata samaan aikaan, vaan tämän p-For:n eri kierroksilla)
+                                ang#=GetAngle(p\x1,p\y1, p\x2,p\y2)
+                                TörmäyskohteenKulma=WrapAngle180(TörmäyskohteenKulma+ang)
+                                Color cbred
+                                tkk=TörmäysKohteenKulma/MoneenkoPeiliinOsuttiin
+                                If WrapAngle180(tkk)=WrapAngle180(d) Then
+                                    'Peili on saman suuntainen kuin valonsäde, joten tehdään merkintä,
+                                    'että valonsäde osataan laskea oikein
+                                    TörmäysSamatLinjat=True
+                                    ÄläSiirräJatkopaikkaa=True
+                                Else
+                                    'Peili EI OLE samansuuntainen kuin valonsäde, joten
+                                    'nollataan aiemmat merkinnät
+                                    TörmäysSamatLinjat=False
+                                    ÄläSiirräJatkopaikkaa=False
+                                End If
+                            End If
+                            TörmäysX=IntersX
+                            TörmäysY=IntersY
+                            TörmäysTapahtui=True
+                            TörmäysKohde=ConvertToInteger(p)
+                            TörmäysTyyppi$="peili"
+                        End If
                     End If
                 Next p
-                If Not OsuttuPeiliin Then
-                    For e.Esteet = Each Esteet
-                        If LinesIntersect(viX,viY, iX,iY, e\x1,e\y1, e\x2,e\y2) Then
-                            SunBEAMError = "Valo pysähtyi seinään"
-                            x=IntersX
-                            y=IntersY
-                            Color cbyellow
-                            Viiva(vx,vy, x,y, 208,176,0)
-                            DrawToScreen
-                            Return False
+                
+                'Käydään läpi kohteet
+                For k.Kohteet = Each Kohteet
+                    If k\täytetty=False 'And IgnoreSeurKohde=False Then
+                        kx1=k\x
+                        ky1=k\y
+                        kx2=k\x+k\w
+                        ky2=k\y+k\h
+                        törmx=0
+                        törmy=0
+                        osui=False
+                        'Ylälaita
+                        If LinesIntersect(vx+Cos(d),vy-Sin(d),x,y, kx1,ky1,kx2,ky1) Then
+                            osui=True
+                            törmx=IntersX : törmy=IntersY
                         End If
-                    Next e
-                End If
-                KuljettuMatka = KuljettuMatka + Distance(viX,viY, iX,iY)/GridKoko
-                For m.Kohteet = Each Kohteet
-                    If Not m\täytetty Then
-                        If iX=> m\x And iX<= m\x+m\w Then
-                            If iY=> m\y And iY<=m\y+m\h Then
-                                m\täytetty=True
-                                TäytettyjäMaaleja+1
+                        'Vasen laita
+                        If LinesIntersect(vx+Cos(d),vy-Sin(d),x,y, kx1,ky1,kx1,ky2) Then
+                            osui=True
+                            If Distance(vx,vy,IntersX,IntersY)<distance(vx,vy, törmx,törmy) Or (törmx=0 And törmy=0) Then törmx=IntersX : törmy=IntersY
+                        End If
+                        'Oikea laita
+                        If LinesIntersect(vx+Cos(d),vy-Sin(d),x,y, kx2,ky1,kx2,ky2) Then
+                            osui=True
+                            If Distance(vx,vy,IntersX,IntersY)<distance(vx,vy, törmx,törmy) Or (törmx=0 And törmy=0) Then törmx=IntersX : törmy=IntersY
+                        End If
+                        'Alalaita
+                        If LinesIntersect(vx+Cos(d),vy-Sin(d),x,y, kx1,ky2,kx2,ky2) Then
+                            osui=True
+                            If Distance(vx,vy,IntersX,IntersY)<distance(vx,vy, törmx,törmy) Or (törmx=0 And törmy=0) Then törmx=IntersX : törmy=IntersY
+                        End If
+                        If osui Then
+                            dist# = Distance(vx,vy, törmx,törmy)
+                            If int(dist)<Int(TörmäysDist)-1 Or TörmäysTapahtui=False Then
+                                TörmäysTapahtui=True
+                                TörmäysDist=dist
+                                TörmäysX=törmx
+                                TörmäysY=törmy
+                                TörmäysKohde=ConvertToInteger(k)
+                                TörmäysTyyppi="kohde"
+                            'ElseIf dist=TörmäysDist And TörmäysTyyppi="peili" Then
+                                'Osutaan peiliin ja kohteeseen samaan aikaan
+                                'Kohdetta ei vielä merkitty "täytetyksi", mutta näin tulee
+                                'tapahtumaan seuraavalla kierroksella, jollei sitä estetä näin:
+                                'IgnoreSeurKohde=
                             End If
                         End If
                     End If
-                Next m
+                Next k
+                
+                'Tutkitaan törmäys, jos sellainen havaittiin
+                If TörmäysTapahtui Then
+                    If TörmäysTyyppi="este" Then
+                        SunBEAMError = "Valo pysähtyi seinään"
+                        e=ConvertToType(TörmäysKohde)
+                        If Not TörmäysSamatLinjat Then
+                            x=TörmäysX
+                            y=TörmäysY
+                        Else
+                            If Distance(vx,vy, e\x1,e\y1) < Distance(vx,vy, e\x2,e\y2) Then
+                                x=e\x1
+                                y=e\y1
+                            Else
+                                x=e\x2
+                                y=e\y2
+                            End If
+                        End If
+                        Color ValoR,ValoG,ValoB
+                        ShadedLine(vx,vy, x,y)
+                        DrawToScreen
+                        KohteetMuuttuneet=True
+                        Laskentaaika=Timer()-Aloitusaika
+                        Return False
+                        
+                    ElseIf TörmäysTyyppi="peili" And ConvertToType(TörmäysKohde)<>IgnoreId.Peilit Then
+                        p=ConvertToType(TörmäysKohde)
+                        IgnoreId.Peilit=p
+                        If MoneenkoPeiliinOsuttiin>1 Then
+                            'Osuttiin useampaan peiliin samaan aikaan samoissa koordinaateissa
+                            TörmäyskohteenKulma=TörmäyskohteenKulma/MoneenkoPeiliinOsuttiin'+d
+                            tkk=TörmäyskohteenKulma
+                            If NäytäLumepeili Then
+                                Line TörmäysX-Cos(tkk)*20,TörmäysY+Sin(tkk)*20, TörmäysX+Cos(tkk)*20,TörmäysY-Sin(tkk)*20
+                                SetFont FNT_Pieni
+                                Text TörmäysX+5, -TörmäysY+5, Str(tkk)+"°"
+                                SetFont FNT_Tavallinen
+                            End If
+                        End If
+                        If Not TörmäysSamatLinjat Then
+                            d=WrapAngle(TörmäyskohteenKulma-(d-TörmäyskohteenKulma))
+                            kerroin#=(360-WrapAngle(d-TörmäyskohteenKulma))/360 * 5 'viimeinen luku = maksimikerroin, minkä kaava saattaa antaa
+                            x=TörmäysX'+Cos(d)*kerroin 'jos valonsäde bugaa peileissä,
+                            y=TörmäysY'-Sin(d)*kerroin 'suurenna kertointa HIEMAN (muuttamalla yläpuolella olevaa kaavaa, joka laskee kertoimen automaattisesti tilanteen mukaan)
+                        Else
+                            If Not ÄläSiirräJatkopaikkaa Then
+                                If Distance(vX,vY, p\x1,p\y1) < Distance(vX,vY, p\x2,p\y2) Then
+                                    x=p\x1'-Cos(d)
+                                    y=p\y1'+Sin(d)
+                                Else
+                                    x=p\x2'-Cos(d)
+                                    y=p\y2'+Sin(d)
+                                End If
+                            Else
+                                x=TörmäysX
+                                y=TörmäysY
+                            End If
+                            d=WrapAngle(d+180)
+                        End If
+                        If PiirräOsumat Then
+                            Color cbred
+                            Circle x-5,y-5,10, OFF
+                        End If
+                        Osumia+1
+                        p\osumia = p\osumia + 1
+                        If p\osumia > OsumiaEnintäänYhdessäPeilissä Then OsumiaEnintäänYhdessäPeilissä = p\osumia
+                        TörmäysTapahtui=False
+                        
+                    ElseIf TörmäysTyyppi="kohde" Then
+                        k=ConvertToType(TörmäysKohde)
+                        k\täytetty=True
+                        TäytettyjäKohteita+1
+                        If TäytettyjäKohteita=>Kohteita Then i=iMax
+                        x=TörmäysX : y=TörmäysY
+                    End If
+                End If
+                TörmäysTapahtui=False
+                
                 PäivitäMusiikki() 'Jos sädettä piirretään kauan, saattaa musiikki keretä loppua
-            Next i#
-            Color cbyellow
-            Viiva(vx,vy, x,y, 208,176,0)
-        Wend
-        If Timer()=>lopeta Then SunBEAMError = "Kentän suorittaminen kesti sallittua kauemmin."
-        If x<0 Or x>ScreenWidth() Or y<0 Or y>ScreenHeight() Then SunBEAMError = "Valo karkasi kentältä."
-        If Maaleja=0 Then SunBEAMError = "Kentällä ei ole valaistavia kohteita."
+                    
+                KuljettuMatka = KuljettuMatka + Distance(vX,vY, X,Y)/10
+                Color ValoR,ValoG,ValoB
+                ShadedLine(vx,vy, x,y)
+                'ShadedLine(vx+1,vy+1, x+1,y+1)
+            Wend
+            If Timer()=>lopeta Then SunBEAMError = "Kentän suorittaminen kesti sallittua kauemmin."
+            If x<0 Or x>800 Or y<0 Or y>600 Then SunBEAMError = "Valo karkasi kentältä."
+            If Kohteita=0 Then SunBEAMError = "Kentällä ei ole valaistavia kohteita."
+
     Else
         SunBEAMError = "Kentällä ei ole valonlähdettä."
     End If
     DrawToScreen
-    Laskentaaika=Timer()-aloitusaika
+    Laskentaaika=Timer()-Aloitusaika
+    KohteetMuuttuneet=True
 End Function
 
 Function LuoMaali(x,y,w,h,lukittu=0)
-    m.Kohteet = New(Kohteet)
-    m\x=x
-    m\y=y
-    m\w=w
-    m\h=h
-    m\lukittu=lukittu
-    Maaleja+1
-    If lukittu Then LukittujaOsia+1
+    For k.Kohteet = Each Kohteet
+        If k\x=x And k\y=y And k\w=w And k\w=w Then ÄläLuo=True
+    Next k
+    If Not ÄläLuo Then
+        m.Kohteet = New(Kohteet)
+        m\x=x
+        m\y=y
+        m\w=w
+        m\h=h
+        m\lukittu=lukittu
+        Kohteita+1
+        If lukittu Then LukittujaOsia+1
+        KohteetMuuttuneet=True
+    End If
 End Function
 
 Function PiirräKohteet()
-    For m.Kohteet = Each Kohteet
-        If m\täytetty = True Then Color 0,255,0 Else Color 255,0,0
-        väritys=False
-        If MouseX()=>m\x And MouseX()<=m\x+m\w And Työkalu=4 Then
-            If MouseY()=>m\y And MouseY()<=m\y+m\h Then
-                If Not m\lukittu Then
-                    väritys=True
-                Else
-                    MuutaHiiri(1)
-                End If
-            End If
-        End If
-        If työkalu=5 And ((ToGrid(MouseX())=m\x And ToGrid(MouseY())=m\y) Or (ToGrid(MouseX())=m\x+m\w And ToGrid(MouseY())=m\y+m\h)) Then
-            väritys=True
-        End If
-        If väritys Then
-            Color cblightred
-            MuutaHiiri(0)
-        End If
-        Box m\x,m\y, m\w,m\h
-    Next m
+    If KohteetMuuttuneet Then
+        If KohteetImg>0 Then DeleteImage KohteetImg
+        KohteetImg=MakeImage(800,600)
+        DrawToImage KohteetImg
+        For m.Kohteet = Each Kohteet
+            If m\täytetty = True Then Color Kohde2R,Kohde2G,Kohde2B Else Color Kohde1R,Kohde1G,Kohde1B
+            PiirräKohde(m\x,m\y, m\w,m\h)
+        Next m
+        DrawToScreen
+        KohteetMuuttuneet=False
+    End If
+    If KohteetImg>0 Then DrawImage KohteetImg,0,0
 End Function
 
-Function ToGrid(value#)
-    Return Round(value/GridKoko,0)*GridKoko
+Function ToGridX(value#)
+    If SnapToGrid Then
+        Return Round(value/GridKoko,0)*GridKoko
+    Else
+        Return value
+    End If
 End Function
 
-Function DrawGrid()
-    Color 40,40,40
-    For x = 0 To ScreenWidth() Step GridKoko
-        Line x,0,x,ScreenHeight()
-    Next x
-    For y = 0 To ScreenHeight() Step GridKoko
-        Line 0,y,ScreenWidth(),y
-    Next y
+Function ToGridY(value#)
+    If SnapToGrid Then
+        result = Round(value/GridKoko,0)*GridKoko
+        If result < 20 Then result=20
+        If result > 600-100 Then result=600-100
+        Return result
+    Else
+        Return value
+    End If
+End Function
+
+Function DrawGrid(update=0)
+    If Not NäytäGrid Then Return False
+    If update Or GridKuva=0 Then
+        If GridKuva>0 Then DeleteImage GridKuva
+        GridKuva = MakeImage(800,600)
+        DrawToImage GridKuva
+        Color 40,40,40
+        While x<=800
+            x+GridKoko
+            Line x,0,x,600
+            If x Mod (GridKoko*4) = 0 Then Line x+1,0,x+1,600
+        Wend
+        While y<=600
+            y+GridKoko
+            Line 0,y,800,y
+            If y Mod (GridKoko*4) = 0 Then Line 0,y+1,800,y+1
+        Wend
+        DrawToScreen
+    End If
+    DrawImage GridKuva, 0,0
 End Function
 
 Function TallennaKenttä(tiedosto$)
+    If Left(Lower(tiedosto),7) <> "kentät\" and Left(Lower(tiedosto),7) <> "kentät/" then tiedosto = "Kentät\"+tiedosto
     f = OpenToWrite(tiedosto)
     WriteShort f, "18475" 'tunnus, jolla tiedosto tunnistetaan avattaessa sopivaksi
     WriteString f, EnCrypt2(OhjelmanSalasana,KentänNimi)
     WriteString f, EnCrypt2(OhjelmanSalasana,KentänSalasana)
     WriteString f, EnCrypt2(OhjelmanSalasana,KentänTekijä)
+    WriteByte f, KenttäValmis
     WriteShort f, PeilejäKorkeintaan
     WriteShort f, SädeX
     WriteShort f, SädeY
     WriteShort f, SädeDir
+    WriteByte f, KentänVaikeusaste
     
     For p.Peilit = Each Peilit
-        WriteShort f, 1111
-        WriteShort f, p\x1
-        WriteShort f, p\y1
-        WriteShort f, p\x2
-        WriteShort f, p\y2
-        WriteShort f, p\lukittu
+        If p\SaaTallentaa Then
+            WriteShort f, 1111
+            WriteShort f, p\x1
+            WriteShort f, p\y1
+            WriteShort f, p\x2
+            WriteShort f, p\y2
+            WriteShort f, p\lukittu
+        End If
     Next p
     For m.Kohteet = Each Kohteet
         WriteShort f, 2222
@@ -711,22 +1530,40 @@ Function TallennaKenttä(tiedosto$)
         WriteShort f, ee\y2
         WriteShort f, ee\lukittu
     Next ee
-    WriteString f, "Ota tuosta selvää"
+    For t.Tekstit = Each Tekstit
+        WriteShort f, 5555
+        WriteString f, EnCrypt2(OhjelmanSalasana,t\Teksti)
+        WriteShort f, t\x
+        WriteShort f, t\y
+        WriteShort f, t\w
+    Next t
+    For i = 1 To ToplistaKoko
+        WriteShort f, 9999
+        WriteString f,EnCrypt2(OhjelmanSalasana,Toplista(i,0))
+        WriteString f,EnCrypt2(OhjelmanSalasana,Toplista(i,1))
+        WriteString f,EnCrypt2(OhjelmanSalasana,Toplista(i,2))
+    Next i
+    WriteShort f, 8888 'Muut yksittäiset arvot (muista laittaa 8888 joikaista tällaista arvoa ennen!)
+    WriteShort f, PeilinPituusKorkeintaan 'Ollut mukana ver 1.5 lähtien
     CloseFile f
 End Function
 
 Function AvaaKenttä(tiedosto$)
-    f = OpenToRead(tiedosto)
+    If Left(Lower(tiedosto),7) = "kentät\" or Left(Lower(tiedosto),7) = "kentät/" then tiedosto = mid(tiedosto,7)
+    If Not FileExists("kentät/"+tiedosto) Then MakeError "Map file '"+tiedosto+"' does not exist."
+    f = OpenToRead("kentät/"+tiedosto)
     If ReadShort(f) <> "18475" Then MakeError "File '"+tiedosto+"' is not a proper SunBEAM file."
+    KentänTiedosto = tiedosto
     KentänNimi = DeCrypt2(OhjelmanSalasana,ReadString(f))
     KentänSalasana = DeCrypt2(OhjelmanSalasana,ReadString(f))
     KentänTekijä = DeCrypt2(OhjelmanSalasana,ReadString(f))
+    KenttäValmis = ReadByte(f)
     PeilejäKorkeintaan = ReadShort(f)
     SädeX = ReadShort(f)
     SädeY = ReadShort(f)
     SädeDir = ReadShort(f)
     SädeOlemassa=True
-    
+    KentänVaikeusaste = ReadByte(f)
     While Not EOF(f)
         value = ReadShort(f)
         If value = 1111 Then 'peilit
@@ -735,7 +1572,7 @@ Function AvaaKenttä(tiedosto$)
             x2 = ReadShort(f)
             y2 = ReadShort(f)
             lukittu = ReadShort(f)
-            LuoPari(x1,y1,x2,y2,lukittu)
+            LuoPeili(x1,y1,x2,y2,lukittu)
         End If
         If value = 2222 Then 'Kohteet
             x = ReadShort(f)
@@ -761,12 +1598,57 @@ Function AvaaKenttä(tiedosto$)
             lukittu = ReadShort(f)
             LuoEste(x1,y1, x2,y2, lukittu)
         End If
+        If value = 5555 Then 'Tekstit
+            teksti$ = DeCrypt2(OhjelmanSalasana,ReadString(f))
+            x = ReadShort(f)
+            y = ReadShort(f)
+            w = ReadShort(f)
+            t.Tekstit = New(Tekstit)
+            t\Teksti = teksti
+            t\x = x
+            t\y = y
+            t\w = w
+        End If
+        If value=9999 Then 'Toplista
+            nimi$ = DeCrypt2(OhjelmanSalasana,ReadString(f))
+            pisteet$ = DeCrypt2(OhjelmanSalasana,ReadString(f))
+            pvm$ = DeCrypt2(OhjelmanSalasana,ReadString(f))
+            LisääToplistaan(nimi,pisteet,pvm)
+        End If
+        If value=8888 Then 'Muut, yksittäiset arvot
+            PeilinPituusKorkeintaan = ReadShort(f) 'Ollut mukana ver 1.5 lähtien
+        End If
     Wend
     CloseFile f
+	If OnlineToplist Then
+		HaeNettitoplista()
+	EndIf
+    PeilitMuuttuneet=True
+    EsteetMuuttuneet=True
+    KohteetMuuttuneet=True
+    EstoalueetMuuttuneet=True
+    KuljettuMatka=0
+    TMR_KenttäLadattu=Timer()
 End Function
+
+Function HaeNettitoplista()
+	TyhjennäToplista() 'pyyhitään vanha toplista pois
+	OT_SetupGame(1,KentänVaikeusaste+1,KentänSormenjälki())
+	res = OT_GetToplist(10,"Asc")
+	If Not res Then MakeError OT_LastErrorNumber + ": " + OT_LastErrorString
+	For ots.OT_Scores = Each OT_Scores
+		pvm$ = GetWord(ots\date_,3,"-") + "." + GetWord(ots\date_,2,"-") + "." + GetWord(ots\Date_,1,"-") 'Muunna YYY-MM-DD -> DD.MM.YYY
+		LisääToplistaan(ots\nick,ots\score,pvm,True)
+	Next ots
+EndFunction
+
+Function KentänSormenjälki()
+	Return KentänTiedosto+"|"+KentänNimi+"|"+KentänTekijä+"|"+Kohteita+"|"+Esteitä+"|"+Estoalueita+"|"+SädeX+"|"+SädeY+"|"+SädeDir+"|"+PeilejäKorkeintaan+"|"+PeilinPituusKorkeintaan
+EndFunction
 
 Function TyhjennäKenttä()
     For p.Peilit = Each Peilit
+        If p\Img<>0 Then DeleteImage p\Img
         Delete p
     Next p
     For m.Kohteet = Each Kohteet
@@ -776,9 +1658,14 @@ Function TyhjennäKenttä()
         Delete e
     Next e
     For ee.Esteet = Each Esteet
+        If ee\Img<>0 Then DeleteImage ee\Img
         Delete ee
     Next ee
-    Maaleja=0
+    For t.Tekstit = Each Tekstit
+        if t\Img <> 0 Then DeleteImage t\Img
+        Delete t
+    Next t
+    Kohteita=0
     Peilejä=0
     LukittujaOsia=0
     SädeOlemassa=False
@@ -789,80 +1676,115 @@ Function TyhjennäKenttä()
     Esteitä=0
     SädeDir=0
     KentänTiedosto=""
+    PeilitMuuttuneet=True
+    EsteetMuuttuneet=True
+    KohteetMuuttuneet=True
+    EstoalueetMuuttuneet=True
+    PeilejäKorkeintaan=0
+    TyhjennäToplista()
+    KenttäValmis=False
+    PeilinPituusKorkeintaan=0
 End Function
 
 Function NäytäSunBEAM()
     ClearKeys
+    If TäytettyjäKohteita=Kohteita And KenttäValmis Then
+        If KentänVaikeusaste<2 Then
+            hurraa$="Voitto1-"+Rand(1,2)+".wav"
+        Else
+            hurraa$="Voitto2-"+Rand(1,2)+".wav"
+        End If
+        Ääni(hurraa$)
+    End If
+	näytä_toplistailmoitus = KenttäValmis And TäytettyjäKohteita=Kohteita And PääseeToplistalle(KuljettuMatka)
     Repeat
-        If GridNäytäSunBEAMissa Then DrawGrid()
-        Ulkoasu(ULK_SunBEAM)
+        DrawGrid()
         Color 0,255,0
         PiirräKohteet()
         Color 0,0,255
+		If EstoalueetNäytäSunBEAMissa Then PiirräEstoalueet()
+        If PeilitNäytäSunBEAMissa Then PiirräPeilit()
         PiirräEsteet()
-        if PeilitNäytäSunBEAMissa then PiirräPeilit()
-        DrawImage SunBEAM,0,0
+        If SädeNäytäSunBEAMissa Then DrawImage SunBEAM,0,0
         PiirräValonlähde()
         PäivitäMusiikki()
+        Ulkoasu(ULK_SunBEAM,False,näytä_toplistailmoitus)
         DrawScreen
     Until GetKey()>0 Or PalaaNäytäSunBEAMista
     PalaaNäytäSunBEAMista=False
+    KohteetMuuttuneet=True
     For m.Kohteet = Each Kohteet
         m\täytetty = False
     Next m
 End Function
 
-Function Ulkoasu(tila)
+Function Ulkoasu(tila,VainValmiitKentät=0,toplistailmoitus=0)
     //Piirtää pelin käyttöliittymän näytölle
-    
+
     'Käyttöliittymä
-        Color cbgold
-        Box 0,0,ScreenWidth(),20
+        DrawImageBox Taustakuva, 0,0, 0,0,800,20
         Color cbblackskin
-        Line 0,20,ScreenWidth(),20
+        Line 0,20,800,20
         
-        Color cbgold
-        Box 0,ScreenHeight()-100,ScreenWidth(),100
+        
+        DrawImageBox Taustakuva, 0,600-100, 0,600-200,800,100
         Color cbblackskin
-        Line 0,ScreenHeight()-100,ScreenWidth(),ScreenHeight()-100
+        Line 0,600-100,800,600-100
+        
+        If NäytäKello Then
+            Color cbblack
+            kello$ = "Kello " +lower("on")+" "+time()
+            Text 800-TextWidth(kello)-10,2, kello
+        End If
             
         If tila = ULK_Editori Then
             Color cbblack
-            If KentänTekijä <> "" Then tekijä$ = ", Tehnyt: "+KentänTekijä Else tekijä=""
-            Text 2,2, "SunBEAM - Editori - Kenttä: "+KentänNimi+tekijä
+            If KentänTekijä <> "" And (Len(KentänNimi)<83 Or NäytäKello=False) Then tekijä$ = ", Tehnyt: "+KentänTekijä Else tekijä=""
+            If Len(KentänNimi)=>83 And NäytäKello=True Then kn$=Left(KentänNimi,83) Else kn=KentänNimi
+            Text 2,2, "SunBEAM - Kenttä: "+kn+tekijä
         
             'Valikko
-                x=ScreenWidth()-400
-                y=ScreenHeight()-90
-                uusi = CmdButton("Uusi",x,y,190,20)
-                tallenna = CmdButton("Tallenna",x,y+22,190,20)
-                avaa = CmdButton("Avaa",x,y+44,190,20)
-                lopeta = CmdButton("Lopeta",x,y+66,190,20)
+                x=800-400
+                y=600-90
+                If Not KenttäValmis Then
+                    uusi = CmdButton("Uusi (U)",x,y,190,20)
+                    tallenna = CmdButton("Tallenna (T)",x,y+22,190,20)
+                    avaa = CmdButton("Avaa (A)",x,y+44,190,20)
+                    lopeta = CmdButton("Lopeta (Esc)",x,y+66,190,20)
+                Else
+                    alusta = CmdButton("Aloita alusta",x,y,190,20)
+                    avaa = CmdButton("Valitse kenttä (A)",x,y+22,190,20)
+                    top = CmdButton("Toplista",x,y+44,190,20)
+                    lopeta = CmdButton("Lopeta (Esc)",x,y+66,190,20)
+                End If
                 
-                x=ScreenWidth()-200
-                kokeile = CmdButton("Kokeile",x,y,190,20)
+                x=800-200
+                kokeile = CmdButton("Kokeile (K)",x,y,190,20)
                 ohjeet = CmdButton("Ohjeet",x,y+22,190,20)
-                ominaisuudet = CmdButton("Kentän ominaisuudet",x,y+44,190,20)
-                CmdButton("",x,y+66,190,20)
+                ominaisuudet = CmdButton("Kentän ominaisuudet (O)",x,y+44,190,20)
+                asetukset = CmdButton("Asetukset",x,y+66,190,20)
                 
-                If uusi Or KeyHit(cbkeyreturn) Then
+                If uusi Or KeyHit(cbkeyu) And KenttäValmis=False Then
                     TyhjennäKenttä()
-                ElseIf tallenna Or KeyHit(cbkeyt) Then
+                ElseIf tallenna Or KeyHit(cbkeyt) And KenttäValmis=False Then
                     MuutaHiiri(0)
                     UpdateGame
                     TallennaKenttäIkkuna()
                 ElseIf avaa Or KeyHit(cbkeya) Then
                     MuutaHiiri(0)
                     UpdateGame
-                    AvaaKenttäIkkuna()
+                    AvaaKenttäIkkuna(VainValmiitKentät)
+                    PäivitäGrafiikka()
                 ElseIf lopeta Or KeyHit(1) Then
-                    End
-                ElseIf kokeile Then
+                    Return true 'palataan päävalikkoon
+                ElseIf kokeile Or KeyHit(cbkeyk) Then
                     MuutaHiiri(0)
                     UpdateGame
                     PiirräSäde()
                     NäytäSunBEAM()
-                ElseIf ominaisuudet Then
+                    ClearKeys
+                    ClearMouse
+                ElseIf ominaisuudet Or KeyHit(cbkeyo) Then
                     MuutaHiiri(0)
                     If KentänSalasana <> "" Then
                         tila = KysyKentänSalasana()
@@ -870,47 +1792,123 @@ Function Ulkoasu(tila)
                         tila=1
                     End If
                     KentänOminaisuudet(tila)
+                ElseIf top Then
+                    NäytäToplista(KuljettuMatka)
+                ElseIf asetukset Then
+                    AsetuksetIkkuna()
+                    PeilitMuuttuneet=True     '|Grafiikoita saatetaan muuttaa,
+                    EsteetMuuttuneet=True     '|joten piirretään nämä uudelleen
+                    EstoalueetMuuttuneet=True '|
+                    KohteetMuuttuneet=True    '|
+                    DrawGrid(1)               '|
+                    PäivitäGrafiikka()        '|
+                ElseIf ohjeet Then
+                    ClearMouse
+                    OhjeetIkkuna()
+                ElseIf alusta Then
+                    tiedosto$ = KentänTiedosto
+                    TyhjennäKenttä()
+                    AvaaKenttä(tiedosto)
+                    PäivitäGrafiikka()
                 End If
                 
             'Työkalut
                 x=10
-                y = ScreenHeight()-90
-                t1 = RadioButton("Aseta valonlähde",x,y,RADIO_Työkalut,RADIO_Työkalu1)
-                t2 = RadioButton("Tee peilejä",x,y+20,RADIO_Työkalut,RADIO_Työkalu2)
-                t3 = RadioButton("Tee kohteita",x,y+40,RADIO_Työkalut,RADIO_Työkalu3)
-                t4 = RadioButton("Poista osia",x,y+60,RADIO_Työkalut,RADIO_Työkalu4)
-                t5 = RadioButton("Siirrä osia",x+170,y,RADIO_Työkalut,RADIO_Työkalu5)
-                t6 = RadioButton("Tee esteitä",x+170,y+20,RADIO_Työkalut,RADIO_Työkalu6)
-                t7 = RadioButton("Tee estoalueita",x+170,y+40,RADIO_Työkalut,RADIO_Työkalu7)
-                Työkalu = t1 + t2*2 + t3*3 + t4*4 + t5*5 + t6*6 + t7*7
+                y = 600-90
+                t1 = RadioButton("Tee peilejä",x,y,RADIO_Työkalut,RADIO_Työkalu1)
+                t2 = RadioButton("Poista osia",x,y+20,RADIO_Työkalut,RADIO_Työkalu2)
+                t3 = RadioButton("Siirrä osia",x,y+40,RADIO_Työkalut,RADIO_Työkalu3)
+                If not KenttäValmis Then 'Voidaan käyttää myös Peilia lisätyökalua
+                    t4 = RadioButton("Tee kohteita",x,y+60,RADIO_Työkalut,RADIO_Työkalu4)
+                    t5 = RadioButton("Aseta valonlähde",x+170,y,RADIO_Työkalut,RADIO_Työkalu5)
+                    t6 = RadioButton("Tee esteitä",x+170,y+20,RADIO_Työkalut,RADIO_Työkalu6)
+                    t7 = RadioButton("Tee estoalueita",x+170,y+40,RADIO_Työkalut,RADIO_Työkalu7)
+                    t8 = RadioButton("Kirjoita tekstiä",x+170,y+60,RADIO_Työkalut,RADIO_Työkalu8)
+                End If
+                Työkalu = t1 + t2*2 + t3*3 + t4*4 + t5*5 + t6*6 + t7*7 + t8*8
                 
         ElseIf tila = ULK_SunBEAM Then
             //SunBEAMin näyttämiseen liittyvä käyttöliittymä
         
             Color cbblack
-            If KentänTekijä <> "" Then tekijä$ = ", Tehnyt: "+KentänTekijä Else tekijä=""
-            Text 2,2, "SunBEAM - "+KentänNimi+tekijä
+            If KentänTekijä <> "" And (Len(KentänNimi)<83 Or NäytäKello=False) Then tekijä$ = ", Tehnyt: "+KentänTekijä Else tekijä=""
+            If Len(KentänNimi)=>83 And NäytäKello=True Then kn$=Left(KentänNimi,83) Else kn=KentänNimi
+            Text 2,2, "SunBEAM - Kenttä: "+kn+tekijä
             
             If SunBEAMError <> "" Then
                 ilmoitus$ = SunBEAMError
             Else
-                If TäytettyjäMaaleja < Maaleja Then
+                If TäytettyjäKohteita < Kohteita Then
                     ilmoitus = "Valo ei saavuttanut kaikkia vaadittavia kohteita, mutta se ehti kulkea "+Number(KuljettuMatka)+" metriä."
                 Else
                     ilmoitus = "Valo saavutti vaaditut kohteet ja se kulki "+Number(KuljettuMatka)+" mikrometriä."
                 End If
             End If
             x=10
-            y=ScreenHeight()-90
+            y=600-90
             Text x,y, ilmoitus
             If OsumiaEnintäänYhdessäPeilissä>1 Then asd$=" (jopa "+Number(OsumiaEnintäänYhdessäPeilissä)+" kertaa osuttu samaan peiliin!)" Else asd=""
-            Text x,y+20, "Peileihin osuttiin "+Number(Osumia)+" kertaa"+asd+"."
-            Text x,y+40, "Valon säteen laskemiseen meni aikaa "+Laskentaaika+" sekunnin tuhannesosaa. Aika on tietokonekohtainen."
+            if Osumia>0 then Text x,y+15, "Peileihin osuttiin "+Number(Osumia)+" kertaa"+asd+"."
+            Text 800-100,y, "("+Laskentaaika+" ms)"
             
-            ok = CmdButton("Takaisin",ScreenWidth()-200,ScreenHeight()-24,190,20)
-            If ok Then PalaaNäytäSunBEAMista=True
-            GridNäytäSunBEAMissa = CheckBox("Näytä taustaruudukko",350,ScreenHeight()-40,GridNäytäSunBEAMissa)
-            PeilitNäytäSunBEAMissa = CheckBox("Näytä peilit",350,ScreenHeight()-20,PeilitNäytäSunBEAMissa)
+            If toplistailmoitus Then
+                Color 255,255,255
+                Text x,y+50, "Pääsit toplistalle! Haluatko kirjoittaa nimesi?"
+                Color 0,0,0
+                kyllä = CmdButton("Kyllä", 800-200,600-46,190,20)
+                takais$="Ei"
+                If kyllä Then
+                    ok=NimenKirjoitusToplistaan()
+                    PalaaNäytäSunBEAMista=ok
+                End If
+            Else
+                takais="Takaisin"
+            End If
+            takaisin = CmdButton(takais$,800-200,600-24,190,20)
+            If takaisin Then PalaaNäytäSunBEAMista=True
+            PeilitNäytäSunBEAMissa = CheckBox("Näytä peilit",195,600-20,PeilitNäytäSunBEAMissa)
+            SädeNäytäSunBEAMissa = CheckBox("Näytä SunBEAM",315,600-20,SädeNäytäSunBEAMissa)
+            EstoalueetNäytäSunBEAMissa = CheckBox("Näytä estoalueet",445,600-20,EstoalueetNäytäSunBEAMissa)
+            
+            'Screenshotin nappaaminen
+                scrsht = CmdButton("Nappaa kuva",10,600-24,170,20)
+                If otakohtakuva Then
+                    ShowMouse OFF
+                    DrawScreen
+                    If Ikkunoitu Then
+                        img = MakeImage(800,600)
+                        CopyBox 0,0, 800,600, 0,0, SCREEN(),Image(img)
+                        SaveImage img, Kuvatiedosto
+                        DeleteImage img
+                    Else
+                        ScreenShot Kuvatiedosto
+                    End If
+                    MuutaHiiri(0)
+                    OtaKohtaKuva=False
+                End If
+                If scrsht Then
+                    Kuvatiedosto=TallennaScreenShot()
+                    If Kuvatiedosto<>"" Then
+                        If Lower(Right(Kuvatiedosto,4))<>".bmp" Then Kuvatiedosto=Kuvatiedosto+".bmp"
+                        While FileExists(Kuvatiedosto) 'Saman niminen tiedosto löytyi - generoidaan sopiva päätenumero
+                            numero$=""
+                            If IsNumber(Mid(Kuvatiedosto,len(Kuvatiedosto)-4,1)) Then
+                                For i = Len(Kuvatiedosto)-4 To 1 Step -1
+                                    If IsNumber(Mid(Kuvatiedosto,i,1)) Then
+                                        numero$=Mid(Kuvatiedosto,i,1)+numero
+                                    Else
+                                        numPituus = Len(Kuvatiedosto)-4-i
+                                        Exit 'poistutaan i-forista
+                                    End If
+                                Next i
+                                Kuvatiedosto = Left(Kuvatiedosto,Len(Kuvatiedosto)-numPituus-4)+(Int(numero)+1)+".bmp"
+                            Else
+                                Kuvatiedosto=left(Kuvatiedosto,Len(Kuvatiedosto)-4)+"2.bmp"
+                            End If
+                        Wend
+                        OtaKohtaKuva=True
+                    End If
+                End If
         End If
 End Function
 
@@ -969,6 +1967,7 @@ Function Number(num,muoto=0)
 End Function
 
 Function Viiva(x1,y1, x2,y2, r2,g2,b2)
+    //Luultavasti turha
     r1=getRGB(RED):g1=getRGB(GREEN):b1=getRGB(BLUE)
     Line x1,y1, x2,y2
     Color r2,g2,b2
@@ -987,38 +1986,51 @@ Function MuutaHiiri(tila)
             ShowMouse hiiri
         Case 1
             ShowMouse hiiristop
+        Case 2
+            ShowMouse hiiri2
     End Select
     HiiriTyyppi=tila
 End Function
 
 Function KaappaaKuva()
-    img = MakeImage(ScreenWidth(),ScreenHeight())
-    CopyBox 0,0,ScreenWidth(),ScreenHeight(),0,0,SCREEN(),Image(img)
+    img = MakeImage(800,600)
+    CopyBox 0,0,800,600,0,0,SCREEN(),Image(img)
     Return img
 End Function
 
 Function KentänOminaisuudet(muokkaus=0)
     tausta = KaappaaKuva()
+    OminaisuudetUudestaan:
     knimi$ = setText(KentänNimi)
     ksala$ = setText(KentänSalasana)
     ktekijä$ = setText(KentänTekijä)
     peilejämax$ = setText(PeilejäKorkeintaan)
+    peilinpituusmax$ = setText(PeilinPituusKorkeintaan)
+    valmis = KenttäValmis
     If PeilejäKorkeintaan=0 Then peilejämax = setText("ei rajaa")
+    If PeilinPituusKorkeintaan=0 Then peilinpituusmax = setText("ei rajaa")
+    CheckRadioButton(RADIO_VaikeusSäätö,KentänVaikeusaste+1)
+    vaikeus=KentänVaikeusaste
+    AlustaIkkuna()
     Repeat
         DrawImage tausta,0,0
-        Ikkuna("Kentän '"+KentänNimi+"' ominaisuudet",300,400)
+        otsikko$="Kentän '"+KentänNimi+"' ominaisuudet"
+        If TextWidth(otsikko)>280 Or KentänNimi="" Then otsikko = "Kentän ominaisuudet" 'lyhennetään liian pitkää otsikkoa
+        Ikkuna(otsikko,300,487)
         x=IkkunaX+5
         y=IkkunaY+28
         If muokkaus Then
+            //Tietojen näyttäminen ja muokkaaminen
+        
             Text x,y, "Kentän nimi:"
             key=GetKey()
-            knimi = InputField(key,x+100,y-2,185,16,knimi)
+            knimi = InputField(key,x+80,y-2,205,16,knimi)
             Text x,y+22, "Kentän tekijä:"
-            ktekijä = InputField(key,x+120,y+20,165,16,ktekijä)
+            ktekijä = InputField(key,x+90,y+20,195,16,ktekijä)
             Text x,y+44,"Kentän salasana:"
-            ksala = InputField(key,x+135,y+42,150,16,ksala,"§")
+            ksala = InputField(key,x+105,y+42,180,16,ksala)
             
-            If LukittujaOsia = Peilejä+Maaleja+Estoalueita+Esteitä And LukittujaOsia>0 Then
+            If LukittujaOsia = Peilejä+Kohteita+Estoalueita+Esteitä And LukittujaOsia>0 Then
                 lukitus$ = "Kentän kaikki osat on lukittu."
                 l=1
             ElseIf LukittujaOsia>0 Then
@@ -1039,12 +2051,63 @@ Function KentänOminaisuudet(muokkaus=0)
             
             Text x,y+126, "Peilejä tällä hetkellä: "+peilejä
             Text x,y+146, "Peilejä korkeintaan:"
-            peilejämax = InputField(key,x+165,y+144,120,16,peilejämax)
-            If getText(peilejämax)="0" Then peilejämax=setText("ei rajaa")            
+            peilejämax = InputField(key,x+135,y+144,150,16,peilejämax)
+            If KeyHit(cbkeybackspace) And Left(peilejämax,1)="1" And IsNumber(getText(peilejämax))=False Then peilejämax="10000"
+            If getText(peilejämax)="0" Then peilejämax=setText("ei rajaa")
+            Text x,y+170, "Peilin pituus korkeintaan (px):"
+            peilinpituusmax = InputField(key,x+185,y+168,100,16,peilinpituusmax)
+            If KeyHit(cbkeybackspace) And Left(peilinpituusmax,1)="1" And IsNumber(getText(peilinpituusmax))=False Then peilinpituusmax="10000"
+            If getText(peilinpituusmax)="0" Then peilinpituusmax=setText("ei rajaa")
             
+            y+24
+            Text x,y+170, "Arvioimasi kentän vaikeusaste:"
+            If RadioButton(VaikeusasteStr(0), x,y+185, RADIO_VaikeusSäätö,1) Then vaikeus=0
+            If RadioButton(VaikeusasteStr(1), x,y+205, RADIO_VaikeusSäätö,2) Then vaikeus=1
+            If RadioButton(VaikeusasteStr(2), x,y+225, RADIO_VaikeusSäätö,3) Then vaikeus=2
+            
+            
+            valmis=Checkbox("Kenttä on valmis",x,y+255,valmis)
+            Text x,y+270, "Kentän merkitseminen valmiiksi"
+            Text x,y+285, "muuttaa editorin tilan"
+            Text x,y+300, "pelaamiselle sopivammaksi."
+            Text x,y+315, "Voit halutessasi poistaa"
+            Text x,y+330, "merkinnän myöhemmin."
+            If valmis Then
+                tallenna = Checkbox("Tallenna kenttä kun painan OK",x,y+360,tallenna)
+                tyhjennätop = Checkbox("Tyhjennä toplista kun painan OK",x,y+380,tyhjennätop)
+            Else
+                tallenna=False
+                tyhjennätop=False
+            End If
+            
+        Else
+            //Pelkkä tietojen näyttäminen
+            
+            Text x,y, "Kentän nimi: "+KentänNimi
+            Text x,y+20, "Kentän tekijä: "+KentänTekijä
+            If KentänSalasana<>"" Then
+                Text x,y+40,"Kenttä suojattu salasanalla: Kyllä"
+            Else
+                Text x,y+40,"Kenttä suojattu salasanalla: Ei"
+            End If
+            If LukittujaOsia = Peilejä+Kohteita+Estoalueita+Esteitä And LukittujaOsia>0 Then
+                lukitus$ = "Kentän kaikki osat on lukittu."
+            ElseIf LukittujaOsia>0 Then
+                lukitus = "Osa kentän osista on lukittu."
+            Else
+                lukitus = "Kentän osat eivät ole lukittu."
+            End If
+            Text x,y+65, lukitus
+            Text x,y+90, "Peilejä tällä hetkellä: "+Peilejä
+            If PeilejäKorkeintaan=0 Then pk$="Ei rajaa" Else pk=Number(PeilejäKorkeintaan)
+            Text x,y+110, "Peilejä korkeintaan: "+pk
+            If PeilinPituusKorkeintaan=0 Then pp$="Ei rajaa" Else pp=Number(PeilinPituusKorkeintaan)
+            Text x,y+140, "Peilin pituus korkeintaan (pikseleinä): "+pp
+            
+            Text x,y+170, "Kentän Vaikeusaste: "+VaikeusasteStr(KentänVaikeusaste)
         End If
         
-        ok = CmdButton("Ok",Ikkunax+2,IkkunaY+386,296)
+        ok = CmdButton("Ok",Ikkunax+2,IkkunaY+470,295)
         PäivitäMusiikki()
         DrawScreen
     Until ok Or peruuta
@@ -1053,39 +2116,100 @@ Function KentänOminaisuudet(muokkaus=0)
         KentänNimi=getText(knimi)
         KentänSalasana=getText(ksala)
         KentänTekijä=getText(ktekijä)
+        KenttäValmis=valmis
+        KentänVaikeusaste=vaikeus
         If peilejämax="ei rajaa" Then
             PeilejäKorkeintaan=0
         Else
             PeilejäKorkeintaan=getText(peilejämax)
-            If PeilejäKorkeintaan < Peilejä And PeilejäKorkeintaan<>0 Then PeilejäKorkeintaan=Peilejä
+            If PeilejäKorkeintaan < Peilejä And PeilejäKorkeintaan<>0 Then PeilejäKorkeintaan=Peilejä+Abs(PeilejäKorkeintaan)
         End If
+        If peilinpituusmax="ei rajaa" Then
+            PeilinPituusKorkeintaan=0
+        Else
+            PeilinPituusKorkeintaan=Min(Max(Int(getText(peilinpituusmax)),0),1000)
+        End If
+        If KenttäValmis And Työkalu>3 Then työkalu=3 : CheckRadioButton(RADIO_Työkalut,RADIO_Työkalu3)
+        If KenttäValmis=False Or tallenna=True Then
+            For p.Peilit = Each Peilit
+                p\SaaTallentaa=True
+            Next p
+        End If
+        If tallenna Then
+            If KentänTiedosto <> "" Then
+                TallennaKenttä("kentät\"+KentänTiedosto)
+            Else
+                DrawImage tausta,0,0
+                tallennaok=TallennaKenttäIkkuna()
+                If Not tallennaok Then Goto OminaisuudetUudestaan
+            End If
+        End If
+        If tyhjennätop Then TyhjennäToplista()
     End If
+    PeilitMuuttuneet=True
+    EsteetMuuttuneet=True
+    EstoalueetMuuttuneet=True
+    KohteetMuuttuneet=True
+    PäivitäGrafiikka()
+End Function
+
+Function AlustaIkkuna()
+    IkkunaX=-1
+    IkkunaY=-1
 End Function
 
 Function Ikkuna(nimi$,w,h)
-    x=(ScreenWidth()-w)/2
-    y=(ScreenHeight()-h)/2
-    Color cbgold
-    Box x,y,w,h
+    If IkkunaX=-1 And IkkunaY=-1 Then
+        x=(800-w)/2
+        y=(600-h)/2
+    Else
+        x=IkkunaX
+        y=IkkunaY
+    End If
+    
+    'Ikkunan siirtäminen
+        If MouseX()>=x And MouseX()<=x+w And MouseY()>=y And MouseY()<=y+20 Then
+            If MouseHit(1) Then
+                IkkunaHiiriXEro = MouseX()-x
+                IkkunaHiiriYEro = MouseY()-y
+                IkkunaaSiirretään=True
+            End If
+        End If
+        If MouseDown(1) And IkkunaaSiirretään Then
+            x=MouseX()-IkkunaHiiriXEro
+            y=MouseY()-IkkunaHiiriYEro
+        Else
+            IkkunaaSiirretään=False
+        End If
+    
     Color cbblackskin
     If (MouseX()<x Or MouseX()>x+w Or MouseY()<y Or MouseY()>y+h) And MouseDown(1) Then Color cbred
     Box x,y,w,h, OFF
-    Color cbblack
+    DrawImageBox Taustakuva,x+1,y+21,0,0,w-2,h-22
+    For i# = 1 To 20
+        pros#=i/20
+        r=255+(255-255)*pros
+        g=255+(172-255)*pros
+        b=0+(0-0)*pros
+        Color r,g,b
+        Line x+1,y+i,x+w-2,y+i
+    Next i#
+    Color 0,0,0
     Text x+4,y+4,nimi
-    Line x,y+22,x+w,y+22
     IkkunaX=x
     IkkunaY=y
 End Function
 
 Function KysyKentänSalasana()
     tausta = KaappaaKuva()
+    AlustaIkkuna()
     Repeat
         DrawImage tausta,0,0
         Ikkuna("Anna salasana",500,130)
         x=IkkunaX+5
         y=IkkunaY+28
         Text x,y, "Tämän kentän ominaisuuksien muuttaminen vaatii salasanan."
-        salasana$ = InputField(GetKey(),x,y+20,490,16,salasana,"§")
+        salasana$ = InputField(GetKey(),x,y+20,490,16,salasana)
         Ok = CmdButton("Ok",IkkunaX+2,IkkunaY+99,496)
         VainLuku = CmdButton("Näytä ominaisuudet muokkaamatta niitä",IkkunaX+2,IkkunaY+115,496)
         If Ok Then
@@ -1166,103 +2290,145 @@ Function LukitseOsat(tila=1)
     Next ee
 End Function
 
-Function PiirräValonlähde()
-    If SädeOlemassa Then
+Function PiirräValonlähde(x=0,y=0)
+    If x=0 And y=0 Then
+        x=SädeX
+        y=SädeY
         SädeDir = Min(Max(SädeDir,0),360)
-        DrawImage Valonlähde(SädeDir), SädeX,SädeY
+        dir=SädeDir
+    Else
+        dir=1
+        plaa=True
+    End If
+    
+    If SädeOlemassa Or plaa Then
+        DrawImage Valonlähde(dir,ValittuValo), x,y
     End If
 End Function
 
 Function PäivitäMusiikki()
-    'If Not SoundPlaying(Musiikki) Then Musiikki = PlaySound("data\Musiikki.mp3")
+    If MusiikkiSallittu Then
+        If Not SoundPlaying(Musiikki) Then Musiikki = PlaySound("data\Musiikki.mp3")
+        PauseSound(Musiikki,False)
+    Else
+        If SoundPlaying(Musiikki) Then PauseSound(Musiikki,True)
+    End If
 End Function
 
 Function LuoEstoalue(x,y,w,h,lukittu=0)
-    e.Estoalueet = New(Estoalueet)
-    e\x=x
-    e\y=y
-    e\w=w
-    e\h=h
-    e\lukittu=lukittu
-    Estoalueita+1
-    LukittujaOsia=LukittujaOsia+lukittu
+    For e.Estoalueet = Each Estoalueet
+        If e\x=x And e\y=y And e\w=w And e\w=w Then ÄläLuo=True
+    Next e
+    If Not ÄläLuo Then
+        e.Estoalueet = New(Estoalueet)
+        e\x=x
+        e\y=y
+        e\w=w
+        e\h=h
+        e\lukittu=lukittu
+        Estoalueita+1
+        LukittujaOsia=LukittujaOsia+lukittu
+        EstoalueetMuuttuneet=True
+    End If
 End Function
 
 Function PiirräEstoalueet()
-    For e.Estoalueet = Each Estoalueet
-        Color cbdarkred
-        väritys=False
-        If työkalu = 4 Then
-            If MouseX()=>e\x And MouseX()<=e\x+e\w Then
-                If MouseY()=>e\y And MouseY()<=e\y+e\h Then
-                    If Not e\lukittu Then
-                        väritys=True
-                    Else
-                        MuutaHiiri(1)
+    If EstoalueetMuuttuneet Then
+        For p.Peilit=Each Peilit
+            p\Estetty=False
+        Next p
+        If EstoalueetImg>0 Then DeleteImage EstoalueetImg
+        EstoalueetImg=MakeImage(800,600)
+        DrawToImage EstoalueetImg
+        For e.Estoalueet = Each Estoalueet
+            Color EstoalueR,EstoalueG,EstoalueB
+            PiirräEstoalue(e\x,e\y, e\w,e\h)
+            
+            'Tarkistetaan, mitä peilejä tämä estoalue estää siirtämästä
+            For p.Peilit = Each Peilit
+                aMax = Max(Abs(p\x1-p\x2),Abs(p\y1-p\y2))
+                For a# = 0 To aMax
+                    pros=a/aMax
+                    x=p\x1+(p\x2-p\x1)*pros
+                    y=p\y1+(p\y2-p\y1)*pros
+                    If x=>e\x And x<=e\x+e\w And y=>e\y And y<=e\y+e\h Then
+                        p\Estetty=True
                     End If
-                End If
-            End If
-        End If
-        If Työkalu=5 And ((ToGrid(MouseX())=e\x And ToGrid(MouseY())=e\y) Or (ToGrid(MouseX())=e\x+e\w And ToGrid(MouseY())=e\y+e\h)) Then
-            väritys=True
-        End If
-        If väritys Then
-            Color cblightred
-            MuutaHiiri(0)
-        End If
-        Box e\x,e\y, e\w,e\h, OFF
-    Next e
+                Next a#
+            Next p
+        Next e
+        DrawToScreen
+        EstoalueetMuuttuneet=False
+    End If
+    If EstoalueetImg>0 Then DrawImage EstoalueetImg,0,0
 End Function
 
 Function LuoEste(x1,y1, x2,y2, lukittu=0)
-    e.Esteet = New(Esteet)
-    e\x1=x1
-    e\y1=y1
-    e\x2=x2
-    e\y2=y2
-    e\lukittu=lukittu
-    LukittujaOsia = LukittujaOsia+lukittu
-    Esteitä+1
+    For e.Esteet = Each Esteet
+        If e\x1=x1 And e\y1=y1 And e\x2=x2 And e\y2=y2 Then ÄläLuo=True
+        If e\x1=x2 And e\y1=y2 And e\x2=x1 And e\y2=y1 Then ÄläLuo=True
+    Next e
+    If Not ÄläLuo Then
+        e.Esteet = New(Esteet)
+        e\x1=x1
+        e\y1=y1
+        e\x2=x2
+        e\y2=y2
+        e\lukittu=lukittu
+        LukittujaOsia = LukittujaOsia+lukittu
+        Esteitä+1
+        EsteetMuuttuneet=True
+        DrawToScreen
+    End If
 End Function
 
 Function PiirräEsteet()
-    For e.Esteet = Each Esteet
-        Color cbsilver
-        vr=64:vg=64:vb=64
-        väritys=False
-        If LinesIntersect(MouseX(),MouseY()-4,MouseX(),MouseY()+4, e\x1,e\y1,e\x2,e\y2) Or LinesIntersect(MouseX()+4,MouseY(),MouseX()-4,MouseY(), e\x1,e\y1,e\x2,e\y2) Then
-            If Työkalu = 4 Then
-                If e\lukittu=False Then
-                    väritys=True
-                Else
-                    MuutaHiiri(1)
+    If EsteetMuuttuneet Then
+        If EsteetImg>0 Then DeleteImage EsteetImg
+        If EsteetLukkoImg>0 Then DeleteImage EsteetLukkoImg
+        EsteetImg=MakeImage(800,600)
+        EsteetLukkoImg=MakeImage(800,600)
+        DrawToImage EsteetImg
+        For e.Esteet = Each Esteet
+            img=e\Img
+            If img <>0 Then
+                DrawImage img, min(e\x1,e\x2)-10,Min(e\y1,e\y2)-10
+                If e\lukittu Then
+                    DrawToImage EsteetLukkoImg
+                    DrawImage img, min(e\x1,e\x2)-10,Min(e\y1,e\y2)-10
+                    DrawToImage EsteetImg
                 End If
+            Else
+                Color cbwhite : Line e\x1,e\y1, e\x2,e\y2
             End If
-        End If
-        If Työkalu=5 And ((ToGrid(MouseX())=e\x1 And ToGrid(MouseY())=e\y1) Or (ToGrid(MouseX())=e\x2 And ToGrid(MouseY())=e\y2)) Then
-            väritys=True
-        End If
-        If väritys Then
-            Color cbgreen
-            vr=96:vg=127:vb=13
-            MuutaHiiri(0)
-        End If
-        Viiva(e\x1,e\y1, e\x2,e\y2, vr,vg,vb)
-    Next e
+        Next e
+        DrawToScreen
+        EsteetMuuttuneet=False
+    End If
+    If EsteetImg>0 Then DrawImage EsteetImg,0,0
 End Function
 
-Function AvaaKenttäIkkuna()
-    FormatList(LST_Kentät)
-    FormatList(LST_Temp)
+Function AvaaKenttäIkkuna(VainValmiit=0)
+    CheckRadioButton(RADIO_VaikeusNäyttö,1)
     t=KaappaaKuva()
+    AlustaIkkuna()
+    LataaKenttälista:
     oldDir$ = CurrentDir()
     ChDir "Kentät"
+    FormatList(LST_Kentät)
+    FormatList(LST_Temp)
     StartSearch
     Repeat
         f$ = FindFile()
         If Lower(Right(f,4))=".sun" Then
-            AddListItem(LST_Kentät,HaeKentänNimi(f)+" ("+f+")")
-            AddListItem(LST_Temp,f)
+            nimi$ = Left(Str(HaeKentänNimi(f,VainValmiit)),40)
+            vaikeus = HaeKentänVaikeusaste(f)
+            If vaikeus=näytävaikeus-1 Or näytävaikeus=0 Then
+                If nimi <> "error" Then
+                    If VainValmiit=False then AddListItem(LST_Kentät,f+" - "+nimi) Else AddListItem(LST_Kentät,nimi + " ("+VaikeusasteStr(vaikeus)+")")
+                    AddListItem(LST_Temp,f)
+                End If
+            End If
         End If
     Until f=""
     EndSearch
@@ -1272,17 +2438,30 @@ Function AvaaKenttäIkkuna()
         Ikkuna("Avaa Kenttä",400,500)
         x=IkkunaX+5
         y=IkkunaY+28
-        Text x,y,"Valitse kenttä:"
-        List(LST_Kentät,x,y+20,390,420)
+        text x,y, "Näytä:"
+        If RadioButton("Kaikki",x+50,y, RADIO_VaikeusNäyttö, 1) Then näytävaikeus=0
+        If RadioButton("Helpot",x+115,y, RADIO_VaikeusNäyttö, 2) Then näytävaikeus=1
+        If RadioButton("Vaikeat",x+185,y, RADIO_VaikeusNäyttö, 3) Then näytävaikeus=2
+        If RadioButton("Todella vaikeat",x+258,y, RADIO_VaikeusNäyttö, 4) Then näytävaikeus=3
+        If oldNäytäVaikeus<>näytävaikeus Then
+            oldNäytäVaikeus=näytävaikeus
+            Goto LataaKenttälista
+        End If
+        Text x,y+20,"Valitse kenttä:"
+        List(LST_Kentät,x,y+40,390,400)
         Ok = CmdButton("Ok",x,y+450,192,16)
         Peruuta = CmdButton("Peruuta",x+195,y+450,192,16)
         DrawScreen
     Until Ok Or Peruuta
     If Ok Then
         TyhjennäKenttä()
-        AvaaKenttä("kentät\"+ListItems(LST_Temp,ListSelected(LST_Kentät)))
-        KentänTiedosto = ListItems(LST_Temp,ListSelected(LST_Kentät))
+        AvaaKenttä(ListItems(LST_Temp,ListSelection(LST_Kentät)))
+        'KentänTiedosto = ListItems(LST_Temp,ListSelection(LST_Kentät))
+        DeleteImage t
+        Return True
     End If
+    DeleteImage t
+    Return False
 End Function
 
 Function TallennaKenttäIkkuna()
@@ -1294,12 +2473,16 @@ Function TallennaKenttäIkkuna()
     Repeat
         f$ = FindFile()
         If Lower(Right(f,4))=".sun" Then
-            AddListItem(LST_Kentät,f)
+            nimi$ = HaeKentänNimi(f) 'haku tehdään vain sen vuoksi, että samalla tarkistetaan, onko tiedosto sopiva tälle SunBEAMin versiolle
+            If nimi <> "error" Then
+                AddListItem(LST_Kentät,f)
+            End If
         End If
     Until f=""
     EndSearch
     ChDir oldDir
     tiedosto$ = setText(KentänTiedosto)
+    AlustaIkkuna()
     Repeat
         DrawImage t,0,0
         Ikkuna("Tallenna Kenttä",400,500)
@@ -1308,26 +2491,1174 @@ Function TallennaKenttäIkkuna()
         Text x,y,"Valitse kenttä:"
         List(LST_Kentät,x,y+20,390,400)
         If ListSelectionChanged(LST_Kentät) Then
-            tiedosto = setText(GetListSelected(LST_Kentät))
+            tiedosto = setText(GetListSelection(LST_Kentät))
         End If
-        tiedosto = InputField(getkey(),x,y+430,390,20,tiedosto)
-        Ok = CmdButton("Ok",x,y+450,192,16)
+        tiedosto = InputField(getkey(),x,y+426,390,20,tiedosto)
+        Ok = (CmdButton("Ok",x,y+450,192,16) And getText(Tiedosto)<>"")
         Peruuta = CmdButton("Peruuta",x+195,y+450,192,16)
         DrawScreen
+        PäivitäMusiikki()
     Until Ok Or Peruuta
+    DeleteImage t
     If Ok Then
         tiedosto = getText(tiedosto)
         If Lower(Right(tiedosto,4))<> ".sun" Then tiedosto+".sun"
         TallennaKenttä("kentät\"+tiedosto)
         KentänTiedosto=tiedosto
+        Return True
+    Else
+        Return False
     End If
 End Function
 
-Function HaeKentänNimi(tiedosto$)
+Function HaeKentänNimi(tiedosto$,VainValmiit=0)
     If Not FileExists(tiedosto) Then Return "-ei tiedostoa-"
     f = OpenToRead(tiedosto)
-    If ReadShort(f) = "18475" Then nimi$ = DeCrypt2(OhjelmanSalasana,ReadString(f))
-    CloseFile f
-    Return nimi
+    If ReadShort(f) = "18475" Then nimi$ = DeCrypt2(OhjelmanSalasana,ReadString(f)) Else CloseFile f : Return "error"
+    If nimi="error" Then nimi="Error" 'jos kentän nimi jostakin syystä on error, ei sotketa sitä funktio käyttämään error-viestiin, vaan muutetaan ensimmäinen kirjain isoksi,j olloin se on eri.
+    If VainValmiit Then
+        asd$=ReadString(f):asd$=ReadString(f)
+        valmis=ReadByte(f)
+        CloseFile f
+        If valmis Then Return nimi Else Return "error"
+    Else
+        CloseFile f
+        Return nimi
+    End If
 End Function
 
+Function HaeKentänVaikeusaste(tiedosto$)
+    If Not FileExists(tiedosto) Then Return ""
+    f = OpenToRead(tiedosto)
+    If ReadShort(f) = "18475" Then
+        asd = DeCrypt2(OhjelmanSalasana,ReadString(f))
+        asd = DeCrypt2(OhjelmanSalasana,ReadString(f))
+        asd = DeCrypt2(OhjelmanSalasana,ReadString(f))
+        asd = ReadByte(f)
+        asd = ReadShort(f)
+        asd = ReadShort(f)
+        asd = ReadShort(f)
+        asd = ReadShort(f)
+        vaikeusaste = ReadByte(f)
+        CloseFile f
+        Return vaikeusaste
+    Else
+        CloseFile f
+        Return error
+    End If
+    
+End Function
+
+Function KarttaLine(x1,y1, x2,y2, b=3)
+    'b = paksuus
+    iMax=Max(Abs(x1-x2),Abs(y1-y2))
+    For i# = 0 To iMax
+        pros#=i/iMax
+        x=x1+(x2-x1)*pros
+        y=y1+(y2-y1)*pros
+        Box x-b/2,y-b/2,b,b,ON
+    Next i#
+End Function
+
+Function TyhjennäToplista()
+	OT_EmptyToplist()
+    For i = 1 To ToplistaKoko
+        Toplista(i,0)=""
+        Toplista(i,1)=""
+        Toplista(i,2)=""
+    Next i  
+End Function
+
+Function LisääToplistaan(nimi$, pisteet, pvm$="", vain_lokaaliin=0)
+	If OnlineToplist And vain_lokaaliin=False Then
+		res = OT_SubmitScore(nimi, pisteet)
+		If Not res Then MakeError OT_LastErrorNumber+": "+OT_LastErrorString
+		HaeNettitoplista()
+	Else
+		For i = 1 To ToplistaKoko
+			If Int(Toplista(i,1))=pisteet Then Return False 'Sama tulos jo olemassa - hylätään pistemerkintä
+			If Int(Toplista(i,1))>pisteet Or Int(Toplista(i,1))=0 And sija=0 Then sija=i
+		Next i
+		For j=ToplistaKoko To sija+1 Step-1
+			Toplista(j,0)=Toplista(j-1,0)
+			Toplista(j,1)=Toplista(j-1,1)
+			Toplista(j,2)=Toplista(j-1,2)
+		Next j
+		Toplista(sija,0)=nimi
+		Toplista(sija,1)=pisteet
+		If pvm="" Then pvm=SiistiPäivämäärä(Date())
+		Toplista(sija,2)=pvm
+	EndIf
+End Function
+
+Function SiistiPäivämäärä(pvm$)
+    p=Left(pvm,2)
+    k$=Lower(Mid(pvm,4,3))
+    v=Right(pvm,4)
+
+    kuukaudet$="janfebmaraprmayjunjulaugsepoctnovdec"
+    For i = 1 To Len(kuukaudet) Step 3
+        kuu+1
+        If k=Mid(kuukaudet,i,3) Then Exit
+    Next i
+
+    Return Str(p)+"."+Str(kuu)+"."+Str(v)
+End Function
+
+Function MouseHit2()
+    If MouseDown(1) And MouseHit2Data=0 Then
+        MouseHit2Data=1
+        Return True
+    End If
+End Function
+
+Function UpdateMouseHit2()
+    If Not MouseDown(1) Then MouseHit2Data=0
+End Function
+
+Function IsNumber(arvo$)
+    While Left(arvo,1)="0"
+        arvo = Right(arvo,Len(arvo)-1)
+    Wend
+    Return arvo = Str(Int(arvo))
+End Function
+
+Function PääseeToplistalle(pisteet)
+	If OnlineToplist Then
+		HaeNettitoplista()
+	EndIf
+	For i = 1 To ToplistaKoko
+		If Int(Toplista(i,1))>pisteet Or Int(Toplista(i,1))=0 Then pääsee=True
+		If Int(Toplista(i,1))=pisteet Then Return False 'Täysin samalla pistemäärällä ei voi kirjoittaa useaan kertaan
+	Next i
+	Return pääsee
+End Function
+
+Function NimenKirjoitusToplistaan()
+    tausta=KaappaaKuva()
+    AlustaIkkuna()
+    Repeat
+        DrawImage tausta,0,0
+        Ikkuna("Kirjoita nimesi",200,100)
+        x=IkkunaX+5
+        y=IkkunaY+30
+        nimi$ = InputField(GetKey(), x,y,190,20,nimi)
+        ok = CmdButton("Ok",x,y+22,190,20)
+        peruuta = CmdButton("Peruuta",x,y+44,190,20)
+        DrawScreen
+        PäivitäMusiikki()
+    Until (ok And getText(nimi)<>"") Or peruuta
+    If ok Then
+        pisteet=KuljettuMatka
+        LisääToplistaan(getText(nimi),pisteet)
+        TallennaKenttä(KentänTiedosto)
+        DrawImage tausta, 0,0 'piirretään tausta NäytäToplista()-funktiota varten (erikoistapaus - muuta peliähän ei muuten näiden välissä piirrettäisi)
+        NäytäToplista(pisteet,True)
+    End If
+    DeleteImage tausta
+    Return ok
+End Function
+
+Function NäytäToplista(KorostaTämä=0,ÄäniKorostuksessa=0)
+    tausta = KaappaaKuva()
+    AlustaIkkuna()
+    Repeat
+        DrawImage tausta,0,0
+        otsikko$="Kentän '"+KentänNimi+"' toplista"
+        If TextWidth(otsikko)> 280 Or KentänNimi="" Then otsikko="Toplista"
+        Ikkuna(otsikko,300,320)
+        x=IkkunaX+5
+        y=IkkunaY+25
+        Text x,y, "   Nimi"
+        Text x+100,y, "Kuljettu matka"
+        Text x+230,y, "Pvm"
+        For i = 1 To ToplistaKoko
+            y+20
+            nimi$ = Toplista(i,0)
+            If Len(nimi)>15 Then nimi = Left(nimi,15) 'liian pitkä
+            pisteet = Toplista(i,1)
+            pvm$ = Toplista(i,2)
+            If pisteet=KorostaTämä And pisteet>0 Then
+                Color cbwhite
+                If HurraaSoitettu=False And i=1 And Toplista(2,1)>0 And ÄäniKorostuksessa Then
+                    'Pääsi ykkössijalle ja lista ei ollut tyhjä - soitetaan ääni
+                    HurraaSoitettu=True
+                    hurraa$="Top"+Rand(1,2)+".wav"
+                    Ääni(hurraa)
+                End If
+            Else
+                Color cbblack
+            End If
+            If pisteet>0 Then
+                Text x,y, i+". "+nimi
+                Text x+150,y, pisteet
+                Text x+200,y, pvm
+            Else
+                Text x,y, i+". -Ei ketään-"
+            End If
+        Next i
+        Text x,IkkunaY+255, "Toplista "+Lower("ON")+" SunBEAMissa käänteinen"
+        Text x,IkkunaY+270, "verrattuna useisiin muihin peleihin."
+        ok=CmdButton("Ok",x,IkkunaY+295,290,18)
+        DrawScreen
+        PäivitäMusiikki()
+    Until ok
+    DeleteImage tausta
+End Function
+
+Function TallennaScreenshot()
+    tausta = KaappaaKuva()
+    AlustaIkkuna()
+    Repeat
+        DrawImage tausta,0,0
+        If Not Ikkunoitu Then otsikko$="Anna kuvalle nimi" Else otsikko = "Ei toimi ikkunassa"
+        Ikkuna(otsikko,200,100)
+        x=IkkunaX+5
+        y=IkkunaY+30
+        If Not Ikkunoitu Then
+            nimi$ = InputField(GetKey(), x,y,190,20,nimi)
+            ok = CmdButton("Ok",x,y+22,190,20)
+        Else
+            Text x,y,    "Tämä toimii vain"
+            Text x,y+15, "kokoruudulla."
+        End If
+        peruuta = CmdButton("Peruuta",x,y+44,190,20)
+        DrawScreen
+        PäivitäMusiikki()
+    Until (ok And getText(nimi)<>"") Or peruuta
+    If ok Then Return getText(nimi) Else Return ""
+End Function
+
+Function TarkistaTarkoitettuNumero()
+    If TarkoitettuTyyppi="" Then TarkoitettuTyyppi="peili"
+    If TarkoitettuNumero>Peilejä And TarkoitettuTyyppi="peili" Then TarkoitettuNumero=1:TarkoitettuTyyppi="este"
+    If TarkoitettuNumero>Esteitä And TarkoitettuTyyppi="este" Then TarkoitettuNumero=1:TarkoitettuTyyppi="kohde"
+    If TarkoitettuNumero>Kohteita And TarkoitettuTyyppi="kohde" Then TarkoitettuNumero=1:TarkoitettuTyyppi="estoalue"
+    If TarkoitettuNumero>Estoalueita And TarkoitettuTyyppi="estoalue" Then TarkoitettuNumero=1:TarkoitettuTyyppi="peili"
+End Function
+
+Function PiirräTausta()
+    DrawImage Taustakuva,0,0
+End Function
+
+Function PiirräLogo()
+    DrawImage Logokuva, (800-ImageWidth(Logokuva))/2,20
+End Function
+
+Function ImgButton(img,x,y)
+    DrawImage img,x,y
+    If MouseX()=>x And MouseX()<=x+ImageWidth(img) And MouseY()=>y And MouseY()<=y+ImageHeight(img) Then
+        HiiriKuvabuttoninpäällä=True
+        Return MouseUp(1)
+    End If
+End Function
+
+Function PäivitysIkkuna()
+    osoite$ = "http://koti.mbnet.fi/jare1/sunbeam/"
+	varaosoite$ = "http://www.kpelit.net/sunbeam/"
+    tausta = KaappaaKuva()
+    tila$="alku"
+    FormatList(LST_PäivitysKuvaukset)
+    ekateksti = MakeImage(400,400)
+    AlustaIkkuna()
+    Repeat
+        DrawImage tausta,0,0
+        w=400
+        h=400
+        Ikkuna("Päivitys",w,h)
+        x=IkkunaX+5
+        y=IkkunaY+30
+        If tila="alku" Then
+            Text x,    y, "Tällä päivitystoiminnolla voit kätevästi tarkistaa, onko pelistä"
+            Text x, y+15, "julkaistu uutta, hieman paranneltua versiota. Jos päivitys on"
+            Text x, y+30, "olemassa, voit ladata sen parilla klikkauksella."
+            
+            Text x, y+60, "Päivittäminen kannattaa aina, sillä se saattaa korjata pelissä olevia"
+            Text x, y+75, "vikoja sekä tuoda uusia ominaisuuksia. Päivitys lisäksi tapahtuu niin,"
+            Text x, y+90, "että koko peliä ei ladata koneelle uudestaan, vaan päivityksessä"
+            Text x,y+105, "ladataan pelkästään ne tiedostot, jotka tarvitsee päivittää. Näin"
+            Text x,y+120, "päivittäminen on mahdollisimman nopeaa ja helppoa."
+            
+            Text x,y+150, "Peli on käynnistettävä päivityksen jälkeen uudestaan! Melko"
+            text x,y+165, "todennäköistä myöskin on, että päivittämisen jälkeen sinua pyydetään"
+            text x,y+180, "ajamaan päivityksen viimeistelevä bat-tiedosto. Jos tarvitsee, saat"
+            Text x,y+195, "siitä ilmoituksen myöhemmässä vaiheessa."
+            
+            etsi=CmdButton("Etsi päivityksiä",IkkunaX+2,IkkunaY+h-23,w/2-4,20)
+            poistu=CmdButton("Peruuta",IkkunaX+1+w/2,IkkunaY+h-23,w/2-4,20)
+            If etsi Then tila="etsi"
+            
+        ElseIf tila="etsi" Then
+            RowText("Peli saattaa jumiutua välillä päivitystoiminnon ollessa käynnissä!",x,y,w-10)
+            Text x,y+40, "Yhdistetään palvelimeen..."
+			yritä_uudestaan:
+            If httpvastaus=0 Then httpvastaus= HTTPGet(osoite+"update.php?versio="+Versio)
+			If	httpvastaus <> 200 And osoite <> varaosoite Then
+				'Yritetään varaosoitteeseen
+				osoite = varaosoite
+				httpvastaus = 0
+				Goto yritä_uudestaan
+            ElseIf httpvastaus<>200 Then
+                Text x,y+60, "Virhe yhdistyksessä ("+httpvastaus+")"
+            Else
+                Text x,y+60, "Palvelin vastasi, tulkitaan päivitysviestiä..."
+                HTTPSaveContent("~update.tmp")
+                f = OpenToRead("~update.tmp")
+                While Not EOF(f)
+                    komento$=""
+                    muu$=""
+                    rivi$ = ReadLine(f)
+                    nappaakomento=False
+                    For i = 1 To Len(rivi) 'selvitetään annettu komento
+                        merkki$=Lower(Mid(rivi,i,1))
+                        If merkki="]" Then Exit
+                        If nappaakomento Then komento$+merkki
+                        If merkki="[" Then nappaakomento=True
+                    Next i
+                    
+                    if komento<>"" Then muu$ = Right(rivi,Len(rivi)-Len(komento)-2)
+                    Select komento
+                        Case "title"
+                            ViestiOtsikko$ = muu
+                        Case "message"
+                            Viesti$ = muu
+                            
+                        Case "file"
+                            Tiedosto$=""
+                            TiedostoKoko$=""
+                            TiedostoKohde$=""
+                            nappaa=1
+                            For i = 1 To Len(muu)
+                                merkki$ = Mid(muu,i,1)
+                                If merkki="(" Then nappaa=2
+                                If merkki=")" Then nappaa=0
+                                If merkki="," Then nappaa=3
+                                If nappaa=1 Then Tiedosto$+merkki
+                                If nappaa=2 And merkki<>"(" Then TiedostoKoko$+merkki
+                                If nappaa=3 And merkki<> "," Then TiedostoKohde$+merkki
+                            Next i
+                            äläOta=False
+                            For t.PäivitysTiedostot = Each PäivitysTiedostot
+                                If t\Tiedosto=Tiedosto Then äläOta=True 'tiedosto ON jo päivityslistalla
+                            Next t
+                            If ÄläOta=False Then
+                                t.PäivitysTiedostot = New(PäivitysTiedostot)
+                                t\Tiedosto=Tiedosto
+                                t\Koko=TiedostoKoko
+                                t\kohde=TiedostoKohde
+                                KokoYhteensä=KokoYhteensä+int(TiedostoKoko)
+                                If TiedostoKohde = "update.bat" Then PyydäUpdateBat=True
+                                TiedostojaYhteensä+1
+                            End If
+                            
+                        Case "description"
+                            AddListItem(LST_PäivitysKuvaukset,muu)
+                            
+                        Case "error"
+                            Virhe$=muu
+                            
+                        Case "run"
+                            tt.PäivitysAjettavat = New(PäivitysAjettavat)
+                            tt\tiedosto=muu
+                    End Select
+                Wend
+                CloseFile f
+                tila="näytäpäivitykset"
+            End If
+            poistu=CmdButton("Poistu",IkkunaX+1+w/2,IkkunaY+h-23,w/2-4,20)
+        
+        ElseIf tila="näytäpäivitykset" then
+            'Näytetään, mitä palvelin vastasi
+            
+            If Virhe<>"" Then
+                Text x,y, "VIRHE!"
+                y2=RowText(Virhe,x+5,y+20,w-10)
+            Else
+                OnPäivityksiä = ListItemsNo(LST_PäivitysKuvaukset)>0
+                If ViestiOtsikko="" Or Viesti="" Then
+                    If not OnPäivityksiä Then
+                        ViestiOtsikko="Ei uusia päivityksiä"
+                        Viesti="Uusia päivityksiä ei löytynyt, mutta muistathan etsiä niitä myöhemmin uudestaan!"
+                    Else
+                        ViestiOtsikko="Päivitys saatavilla"
+                        Viesti="Uusi päivitys on saatavilla. Peli kannattaa päivittää."
+                    End If
+                End If
+                Text x,y, ViestiOtsikko
+                y2=RowText(Viesti,x+5,y+20,w-10)
+                
+                If OnPäivityksiä Then
+                    päivityksiä=ListItemsNo(LST_PäivitysKuvaukset)
+                    y2=RowText("Päivityksiä on yhteensä "+Number(päivityksiä)+" ja niiden yhteiskoko on "+Number(KokoYhteensä)+ " kilotavua. Päivitykset:",x,y2+20,w-10)
+                    scroll = Max(scroll,1)
+                    RowText(ListItems(LST_PäivitysKuvaukset,scroll),x+15,y2+20,w-10)
+                    If päivityksiä>1 Then
+                        scroll=Scrollbar2(SCR_PäivitysKuvaukset,x,y2+20,100,1,päivityksiä)
+                        y2=RowText("^ Vierityspalkki, pidä hiiren nappia pohjassa ja vedä palkin päällä.",x,y2+125,w-10)
+                    End If
+                End If
+                if päivityksiä>0 then lataa=CmdButton("Lataa päivitykset",IkkunaX+2,IkkunaY+h-23,w/2-4,20)
+                If lataa Then tila="lataapäivitykset"
+            End If
+            poistu=CmdButton("Poistu",IkkunaX+1+w/2,IkkunaY+h-23,w/2-4,20)
+            
+        ElseIf tila="lataapäivitykset" then
+            //Ladataan kaikki päivitystiedostot
+            If päivitetty=False 'And odotus=1 Then
+                i=0
+                For t.PäivitysTiedostot = Each PäivitysTiedostot
+                    i+1
+                    lähde$=t\Tiedosto
+                    kohde$=t\Kohde
+                    koko$=t\koko
+                    For j = Len(kohde) To 1 step -1
+                        merkki$=Mid(kohde,j,1)
+                        If merkki="/" Or merkki="\" Then Dir$=Left(kohde,j) : Exit
+                    Next j
+                    If Not IsDirectory(Dir) Then MakeDir Dir
+                    LatausSuoritettu=False
+                    result=HTTPGet(osoite+lähde,True)
+                    If result <> 200
+                        Text x,y2+20,"Virhe latauksessa! Virhenumero: "+result
+                        Text x,y2+35,"Paina jotakin näppäintä sulkeaksesi pelin"
+                        Text x,y2+50,"(voit käynnistää sen heti uudelleen)."
+                        DrawScreen OFF
+                        WaitKey
+                        End
+                    Else
+                        Repeat
+                            DrawImage tausta,0,0
+                            Ikkuna("Lataan päivitystä...",w,h)
+                            If TiedostojaYhteensä>1 Or True Then
+                                y2=RowText("Lataan tiedostoa "+i+"/"+TiedostojaYhteensä+" (koko: "+koko+" kilotavua).",x,y,w-10)
+                                y2=RowText("Yhteensä ladattu "+Number(YhteensäLadattu+TätäLadattu)+ " kilotavua.",x,y2,w-10)
+                            Else
+                                Text x,y, "Lataan päivitystiedostoa."
+                                y2=y+TextHeight("I")
+                            End If
+                            OldDState=DState
+                            DState = HTTPDownloadState()
+                            If OldDState<>DState Then DStateChanged=Timer()
+                            If Timer()>DStateChanged+20000 Then
+                                If DState=0 Then
+                                    y2=RowText("Virhe, tiedoston lataus ei käynnistynyt 20:n sekunin sisällä!",x,y2,w-10)
+                                Else
+                                    y2=RowText("Virhe, tiedoston lataus katkesi!",x,y2,w-10)
+                                End If
+                                RowText("Paina jotakin näppäintä sulkeaksesi peli. Kokeile sen jälkeen käynnistää peli ja päivitystoiminto uudestaan.",x,y2,w-10)
+                                DrawScreen
+                                WaitKey
+                                End
+                            End If
+                            TätäLadattu = DState/1024
+                            If DState >= HTTP_ContentLength Then LatausSuoritettu=True
+                            DrawScreen
+                        Until LatausSuoritettu
+                        HTTPSaveContent(kohde)
+                        Delete t
+                    End If
+                Next t
+                päivitetty=True
+            Else
+                Text x,y, "Päivitys suoritettu!"
+                If PyydäUpdateBat Then
+                    RowText("Peli suljetaan kun poistut tästä toiminnosta. Ole hyvä ja aja pelin kansioon tullut 'update.bat' -tiedosto (normaali tuplaklikkaus tiedoston päällä). Se viimeistelee päivityksen. Ilman sen ajamista päivitys jää vajaaksi. Tiedoston ajamisen jälkeen voit käynnistää pelin normaalisti.",x,y+20,w-10)
+                Else
+                    RowText("Peli suljetaan kun poistut tästä toiminnosta. Voit käynnistää pelin suoraan uudestaan.",x,y+15,w-10)
+                End If
+                poistu=CmdButton("Poistu",IkkunaX+1+w/2,IkkunaY+h-23,w/2-4,20)
+            End If
+            'odotus=1
+        End If
+        If KeyHit(1) Then poistu=True
+        DrawScreen
+        PäivitäMusiikki()
+    Until poistu
+    If FileExists("~update.tmp") Then DeleteFile "~update.tmp"
+    If päivitetty Then End
+End Function
+
+Function WriteConfig(f, otsikko$, arvo$)
+    otsikko$ = Lower(otsikko$)
+    kirjoitus$ = otsikko+"="+arvo
+    WriteLine f, kirjoitus
+End Function
+
+
+Function ReadConfig(f, otsikko$)
+    otsikko$ = Lower(otsikko$)
+    SeekFile f, 0
+
+    While Not EOF(f)
+        rivi$ = Lower(ReadLine(f))
+        If Left(rivi$, Len(otsikko$)+1) = otsikko$+"=" Then
+            arvo$ = Replace(rivi$, otsikko$+"=", "")
+            Return arvo$
+        EndIf
+    Wend
+
+End Function
+
+Function LataaAsetukset()
+    f = OpenToRead("Asetukset.jtn")
+    MusiikkiSallittu = ReadConfig(f, "Musiikki")
+    Varoaika = ReadConfig(f, "Varoaika")
+    Gamma = ReadConfig(f, "Gamma")
+    Ikkunoitu = ReadConfig(f, "Ikkunoitu")
+    GrafiikanKoko = ReadConfig(f, "Grafiikan koko")
+    PeiliR = ReadConfig(f, "PeiliR") : PeiliG = ReadConfig(f, "PeiliG") : PeiliB = ReadConfig(f, "PeiliB")
+    EsteR = ReadConfig(f, "EsteR") : EsteG = ReadConfig(f, "EsteG") : EsteB = ReadConfig(f, "EsteB")
+    Kohde1R = ReadConfig(f, "Kohde1R") : Kohde1G = ReadConfig(f, "Kohde1G") : Kohde1B = ReadConfig(f, "Kohde1B")
+    Kohde2R = ReadConfig(f, "Kohde2R") : Kohde2G = ReadConfig(f, "Kohde2G") : Kohde2B = ReadConfig(f, "Kohde2B")
+    EstoalueR = ReadConfig(f, "EstoalueR") : EstoalueG = ReadConfig(f, "EstoalueG") : EstoalueB = ReadConfig(f, "EstoalueB")
+    ValoR = ReadConfig(f, "ValoR") : ValoG = ReadConfig(f, "ValoG") : ValoB = ReadConfig(f, "ValoB")
+    GridKoko = ReadConfig(f, "Gridin koko")
+    NäytäKello = ReadConfig(f, "Kello")
+    ValittuValo = ReadConfig(f, "Valonlähde")
+    NäytäGrid = ReadConfig(f, "NäytäRuudukko")
+    SnapToGrid = ReadConfig(f, "KohdistaRuudukkoon")
+    ÄänetSallittu = ReadConfig(f, "Äänet")
+	OnlineToplist = ReadConfig(f, "OnlineToplist")
+	COLORS = ReadConfig(f, "COLORS")
+    CloseFile f
+End Function
+
+Function TallennaAsetukset()
+    f = OpenToWrite("Asetukset.jtn")
+    WriteConfig(f, "Musiikki", MusiikkiSallittu)
+    WriteConfig(f, "Varoaika", Varoaika)
+    WriteConfig(f, "Gamma", Gamma)
+    WriteConfig(f, "Ikkunoitu", Ikkunoitu)
+    WriteConfig(f, "Grafiikan koko", GrafiikanKoko)
+    WriteConfig(f, "PeiliR",PeiliR) : WriteConfig(f, "PeiliG",PeiliG) : WriteConfig(f, "PeiliB",PeiliB)
+    WriteConfig(f, "EsteR",EsteR) : WriteConfig(f, "EsteG",EsteG) : WriteConfig(f, "EsteB",EsteB)
+    WriteConfig(f, "Kohde1R",Kohde1R) : WriteConfig(f, "Kohde1G",Kohde1G) : WriteConfig(f, "Kohde1B",Kohde1B)
+    WriteConfig(f, "Kohde2R",Kohde2R) : WriteConfig(f, "Kohde2G",Kohde2G) : WriteConfig(f, "Kohde2B",Kohde2B)
+    WriteConfig(f, "EstoalueR",EstoalueR) : WriteConfig(f, "EstoalueG",EstoalueG) : WriteConfig(f, "EstoalueB",EstoalueB)
+    WriteConfig(f, "ValoR",ValoR) : WriteConfig(f, "ValoG",ValoG) : WriteConfig(f, "ValoB",ValoB)
+    WriteConfig(f, "Gridin koko",GridKoko)
+    WriteConfig(f, "Kello",NäytäKello)
+    WriteConfig(f, "Valonlähde",ValittuValo)
+    WriteConfig(f, "NäytäRuudukko",NäytäGrid)
+    WriteConfig(f, "KohdistaRuudukkoon",SnapToGrid)
+    WriteConfig(f, "Äänet",ÄänetSallittu)
+	WriteConfig(f, "OnlineToplist",OnlineToplist)
+	WriteConfig(f, "COLORS",COLORS)
+    CloseFile f
+End Function
+
+Function PauseSound(chan,pause)
+  If pause Then
+      SetSound chan,OFF,0
+  Else
+      SetSound chan,OFF,100
+  EndIf
+End Function
+
+Function AsetuksetIkkuna()
+    tausta = KaappaaKuva()
+    oldIkkunoitu=Ikkunoitu
+    
+    If Gamma=-100 Then CheckRadioButton(RADIO_Gamma,1)
+    If Gamma=-75  Then CheckRadioButton(RADIO_Gamma,2)
+    If Gamma=-50  Then CheckRadioButton(RADIO_Gamma,3)
+    If Gamma=-25  Then CheckRadioButton(RADIO_Gamma,4)
+    If Gamma=0    Then CheckRadioButton(RADIO_Gamma,5)
+    If Gamma=25   Then CheckRadioButton(RADIO_Gamma,6)
+    If Gamma=50   Then CheckRadioButton(RADIO_Gamma,7)
+    If Gamma=75   Then CheckRadioButton(RADIO_Gamma,8)
+    If Gamma=100  Then CheckRadioButton(RADIO_Gamma,9)
+    
+    If Varoaika=10000 Then CheckRadioButton(RADIO_Varoaika,1)
+    If Varoaika=20000 Then CheckRadioButton(RADIO_Varoaika,2)
+    If Varoaika=30000 Then CheckRadioButton(RADIO_Varoaika,3)
+    
+    If GrafiikanKoko=1 Then CheckRadioButton(RADIO_GfxKoko,1)
+    If GrafiikanKoko=2 Then CheckRadioButton(RADIO_GfxKoko,2)
+    If GrafiikanKoko=3 Then CheckRadioButton(RADIO_GfxKoko,3)
+    If GrafiikanKoko=4 Then CheckRadioButton(RADIO_GfxKoko,4)
+    If GrafiikanKoko=5 Then CheckRadioButton(RADIO_GfxKoko,5)
+    If GrafiikanKoko=10 Then CheckRadioButton(RADIO_GfxKoko,6)
+    
+    If ValittuValo=0 Then CheckRadioButton(RADIO_Valo,1)
+    If ValittuValo=1 Then CheckRadioButton(RADIO_Valo,2)
+    If ValittuValo=2 Then CheckRadioButton(RADIO_Valo,3)
+    
+    If GridKoko = 5  Then CheckRadioButton(RADIO_GridKoko,1)
+    If GridKoko = 10 Then CheckRadioButton(RADIO_GridKoko,2)
+    If GridKoko = 20 Then CheckRadioButton(RADIO_GridKoko,3)
+	
+	If OnlineToplist = True Then CheckRadioButton(RADIO_Toplist, True)
+	If OnlineToplist = False Then CheckRadioButton(RADIO_Toplist, False)
+    
+    AlustaIkkuna()
+    Repeat
+        If MouseDown(1) Or Timer()<aikKulunPäiv+500 Or asetuksetKuva=0
+            If Timer()>aikKulunPäiv+500 Then aikKulunPäiv=Timer()
+            If asetuksetKuva=0 Then asetuksetKuva=MakeImage(800,600)
+            DrawImage tausta,0,0
+            w=520
+            h=500
+            Ikkuna("Asetukset",w,h)
+            x=IkkunaX+5
+            y=IkkunaY+27
+            
+            MusiikkiSallittu = Checkbox("Musiikki",x,y,MusiikkiSallittu)
+            ÄänetSallittu = CheckBox("Äänet",x+100,y,ÄänetSallittu)
+            Ikkunoitu = Checkbox("Aja ikkunassa (muutos vaatii pelin uudelleenkäynnistämisen)",x,y+20,Ikkunoitu)
+            
+            Text x,y+40, "Näytön gamma (vain jos peliä ei ajeta ikkunassa)"
+            If KeepPressed1=False And KeepPressed2=False And KeepPressed3=False And KeepPressed4=False And KeepPressed5=False And KeepPressed6=False Then
+                gn100= Radiobutton("-100",x,y+60,RADIO_Gamma,1)    : If gn100 Then Gamma = -100
+                gn75 = Radiobutton("-75",x+50,y+60,RADIO_Gamma,2)  : If gn75  Then Gamma = -75
+                gn50 = Radiobutton("-50",x+100,y+60,RADIO_Gamma,3) : If gn50  Then Gamma = -50
+                gn25 = Radiobutton("-25",x+150,y+60,RADIO_Gamma,4) : If gn25  Then Gamma = -25
+                g0   = Radiobutton("0",x+200,y+60,RADIO_Gamma,5)   : If g0    Then Gamma = 0
+                g25  = Radiobutton("+25",x+250,y+60,RADIO_Gamma,6) : If g25   Then Gamma = 25
+                g50  = Radiobutton("+50",x+300,y+60,RADIO_Gamma,7) : If g50   Then Gamma = 50
+                g75  = Radiobutton("+75",x+350,y+60,RADIO_Gamma,8) : If g75   Then Gamma = 75
+                g100 = Radiobutton("+100",x+400,y+60,RADIO_Gamma,9): If g100  Then Gamma = 100
+                If Ikkunoitu Then DisableRadioGroup(RADIO_Gamma) Else DisableRadioGroup(RADIO_Gamma, False)
+                ScreenGamma Gamma,Gamma,Gamma
+            End If
+            
+            Color 0,0,0
+            Text x,y+85, "Aika, jonka kuluessa pelin "+lower("ON")+" kyettävä laskemaan valonsäteen"
+            Text x,y+100, "reitti. Jos aika umpeutuu, toiminto lopetetaan. Tällä"
+            Text x,y+115, "varotoimenpiteellä ehkäistään pelin jääminen jumiin."
+            If KeepPressed1=False And KeepPressed2=False And KeepPressed3=False And KeepPressed4=False And KeepPressed5=False And KeepPressed6=False Then
+                v10 = Radiobutton("10 s",x,y+135,RADIO_Varoaika,1)     : If v10 Then Varoaika = 10000
+                v20 = Radiobutton("20 s",x+60,y+135,RADIO_Varoaika,2)  : If v20 Then Varoaika = 20000
+                v30 = Radiobutton("30 s",x+120,y+135,RADIO_Varoaika,3) : If v30 Then Varoaika = 30000
+            End If
+            
+            Color 0,0,0
+            Text x,y+165, "Grafiikan koko (ei vaikuta pelin kulkuun):"
+            If KeepPressed1=False And KeepPressed2=False And KeepPressed3=False And KeepPressed4=False And KeepPressed5=False And KeepPressed6=False Then
+                if RadioButton("Lanka",x,y+180,RADIO_GfxKoko,1) Then GrafiikanKoko = 1
+                if RadioButton("Pieni",x+60,y+180,RADIO_GfxKoko,2) Then GrafiikanKoko = 2
+                if RadioButton("Tavallinen",x+120,y+180,RADIO_GfxKoko,3) Then GrafiikanKoko = 3
+                If RadioButton("Suuri",x+220,y+180,RADIO_GfxKoko,4) Then GrafiikanKoko = 4
+                if RadioButton("Muhkea",x+280,y+180,RADIO_GfxKoko,5) Then GrafiikanKoko = 5
+                if RadioButton("Järisyttävä",x+350,y+180,RADIO_GfxKoko,6) Then GrafiikanKoko = 10
+            End If
+            
+            Color 0,0,0
+            Text x,y+210, "Peilien väri"
+            Color PeiliR,PeiliG,PeiliB
+            ShadedLine(x,y+225,x+50,y+245)
+            If KeepPressed3=False And KeepPressed4=False Then
+                oletus=CmdButton("Oletus",x+130,y+225,70,20)
+                If oletus Then PeiliR=0:PeiliG=164:PeiliB=255
+                CmdButton("Vaihda", x+60,y+225,60,20)
+                If CmdButtonDown Or KeepPressed1 Then
+                    if ValitseVäri(x+60,y+225) Then PeiliR=ValittuR:PeiliG=ValittuG:PeiliB=ValittuB
+                    KeepPressed1=True
+                End If
+                If Not MouseDown(1) Then KeepPressed1=False
+            End If
+            
+            Color 0,0,0
+            Text x+220,y+210, "Esteiden väri"
+            Color EsteR,EsteG,EsteB
+            ShadedLine(x+220,y+225,x+270,y+245)
+            If KeepPressed5=False And KeepPressed6=False Then
+                oletus=CmdButton("Oletus",x+350,y+225,70,20)
+                If oletus Then EsteR=192:EsteG=192:EsteB=192
+                CmdButton("Vaihda",x+280,y+225,60,20)
+                If (CmdButtonDown Or KeepPressed2) Then
+                    if ValitseVäri(x+280,y+225) Then EsteR=ValittuR:EsteG=ValittuG:EsteB=ValittuB
+                    KeepPressed2=True
+                End If
+                If Not MouseDown(1) Then KeepPressed2=False
+            End If
+            
+            Color 0,0,0
+            Text x,y+250, "Estoalueiden väri"
+            Color EstoalueR,EstoalueG,EstoalueB
+            PiirräEstoalue(x+5,y+270,45,20)
+            If KeepPressed4=False Then
+                oletus=CmdButton("Oletus",x+130,y+265,70,20)
+                If oletus Then EstoalueR=192:EstoalueG=0:EstoalueB=0
+                CmdButton("Vaihda",x+60,y+265,60,20)
+                If (CmdButtonDown Or KeepPressed3) Then
+                    If ValitseVäri(x+60,y+255) Then EstoalueR=ValittuR:EstoalueG=ValittuG:EstoalueB=ValittuB
+                    KeepPressed3=True
+                End If
+                If Not MouseDown(1) Then KeepPressed3=False
+            End If
+            
+            Color 0,0,0
+            Text x+220,y+250, "Valonsäteen väri"
+            Color ValoR,ValoG,ValoB
+            ShadedLine(x+225,y+270,x+270,y+290)
+            If KeepPressed5=False Then
+                oletus=CmdButton("Oletus",x+350,y+265,70,20)
+                If oletus Then ValoR=255:ValoG=255:ValoB=0
+                CmdButton("Vaihda",x+280,y+265,60,20)
+                If CmdButtonDown Or KeepPressed6 Then
+                    If ValitseVäri(x+280,y+255) Then ValoR=ValittuR:ValoG=ValittuG:ValoB=ValittuB
+                    KeepPressed6=True
+                End If
+                If Not MouseDown(1) Then KeepPressed6=False
+            End If
+            
+            Color 0,0,0
+            Text x,y+295, "Kohteiden 1. väri"
+            Color Kohde1R,Kohde1G,Kohde1B
+            PiirräKohde(x+5,y+310,45,20)
+            oletus=CmdButton("Oletus",x+130,y+310,70,20)
+            If oletus Then Kohde1R=10:Kohde1G=32:Kohde1B=50
+            CmdButton("Vaihda",x+60,y+310,60,20)
+            If (CmdButtonDown Or KeepPressed4) Then
+                if ValitseVäri(x+60,y+310) Then Kohde1R=ValittuR:Kohde1G=ValittuG:Kohde1B=ValittuB
+                KeepPressed4=True
+            End If
+            If Not MouseDown(1) Then KeepPressed4=False
+            
+            Color 0,0,0
+            Text x+220,y+295, "Kohteiden 2. väri"
+            Color Kohde2R,Kohde2G,Kohde2B
+            PiirräKohde(x+225,y+310,45,20)
+            oletus=CmdButton("Oletus",x+350,y+310,70,20)
+            If oletus Then Kohde2R=254:Kohde2G=237:Kohde2B=14
+            CmdButton("Vaihda",x+280,y+310,60,20)
+            If (CmdButtonDown Or KeepPressed5) Then
+                If ValitseVäri(x+280,y+310) Then Kohde2R=ValittuR:Kohde2G=ValittuG:Kohde2B=ValittuB
+                KeepPressed5=True
+            End If
+            If Not MouseDown(1) Then KeepPressed5=False
+            
+            Color 0,0,0
+            Text x,y+340, "Valonlähde"
+            valo1 = RadioButton("     ",x,y+355, RADIO_Valo,1) : If valo1 Then ValittuValo=0
+            valo2 = RadioButton("     ",x+60,y+355, RADIO_Valo,2) : If valo2 Then ValittuValo=1
+            valo3 = RadioButton("     ",x+120,y+355, RADIO_Valo,3) : If valo3 Then ValittuValo=2
+            DrawImage Valonlähde(0,0),x+30,y+360
+            DrawImage Valonlähde(0,1),x+90,y+360
+            DrawImage Valonlähde(0,2),x+150,y+360
+            
+            Color 0,0,0
+            Text x,y+390, "Ruudukon koko"
+            grid1 = RadioButton("5", x,y+405, RADIO_GridKoko,1) : If grid1 Then GridKoko=5
+            grid2 = RadioButton("10", x+40,y+405, RADIO_GridKoko,2) : If grid2 Then GridKoko=10
+            grid3 = RadioButton("20", x+80,y+405, RADIO_GridKoko,3) : If grid3 Then GridKoko=20
+            
+            Color 0,0,0
+            NäytäGrid = CheckBox("Näytä taustaruudukko",x+230,y+350,NäytäGrid)
+            SnapToGrid = CheckBox("Kohdista ruudukkoon",x+230,y+370,SnapToGrid)
+            NäytäKello = CheckBox("Näytä kellonaika",x+230,y+390,NäytäKello)
+			If (RadioButton(" Käytä nettitoplistaa",x+230,y+410, RADIO_Toplist, True)) Then OnlineToplist = True
+			If (RadioButton(" Käytä oman koneen toplistaa",x+230,y+430, RADIO_Toplist, False)) Then OnlineToplist = False
+            
+            ok = CmdButton("Ok",IkkunaX+3,IkkunaY+h-23,w-6,20)
+            CopyBox 0,0, 800,600, 0,0, SCREEN(), Image(asetuksetKuva)
+        End If
+        DrawImage asetuksetKuva, 0,0
+        DrawScreen
+        PäivitäMusiikki()
+    Until ok
+    DeleteImage asetuksetKuva
+    TallennaAsetukset()
+    If Ikkunoitu<>oldIkkunoitu Then
+        Cls
+        Color 255,255,255
+        Text 0,0, "Asetukset tallennettu. Sulje peli painamalla jotakin"
+        Text 0,15, "näppäintä ja käynnistä uudelleen, kiitos."
+        DrawScreen
+        WaitKey
+        End
+    End If
+    DeleteImage tausta
+End Function
+
+Function OhjeetIkkuna()
+    tausta = KaappaaKuva()
+    CheckRadioButton(RADIO_Ohjeet,1)
+    AlustaIkkuna()
+    Repeat
+        DrawImage tausta,0,0
+        w=500
+        h=500
+        Ikkuna("Ohjeet",w,h)
+        x=IkkunaX+5
+        y=IkkunaY+28
+        
+        esittely=RadioButton("Esittely", x,y, RADIO_Ohjeet,1)
+        pelaaminen=RadioButton("Pelaaminen", x+80,y, RADIO_Ohjeet,2)
+        kenttienluominen=RadioButton("Kenttien luominen", x+170,y, RADIO_Ohjeet,3)
+        lisää=RadioButton("Lisäohjeita", x+310,y, RADIO_Ohjeet,4)
+        tekijä=RadioButton("Pelin tekijä", x+400,y, RADIO_Ohjeet,5)
+        
+        If esittely Then
+            Text x,y+20,  "SunBEAMissa tehtävänäsi on ohjata valonsäde vaadittuihin kohteisiin peilien avulla."
+            Text x,y+35,  "Voit asettaa peilejä kentälle ja päättää kunkin peilin kulman ja pituuden. Pelissä on"
+            Text x,y+50,  "useita erilaisia kenttiä valmiina - niin helppoja kuin vaikeitakin. Jokaisen kentän"
+            Text x,y+65,  "voi ratkaista monella eri tavalla. Kun kenttä on ratkaistu, näet kuinka pitkän matkan"
+            Text x,y+80,  "valo kulki. Mitä lyhyempi matka, sitä parempi. Jokaisella kentällä on oma toplistansa,"
+            Text x,y+95,  "johon pääsee kymmenen lyhimmällä matkalla selvinnyttä pelaajaa. Toplistoissa näytetään"
+            Text x,y+110, "pelaajan nimen ja kuljetun matkan lisäksi myös päivämäärä, jolloin merkintä on tehty"
+            Text x,y+125, "listaan."
+            
+            Text x,y+155, "Voit myös luoda omia kenttiäsi, mutta sitä kannattaa koettaa vasta, kun osaat pelin"
+            Text x,y+170, "perus pelaamisen. Kentissä käytetään neljänlaisia elementtejä:"
+            Text x,y+185, " - Peilit: Valonsäteen heijastavat peilit. Sekä pelaaja että kentän tekijä voi asettaa"
+            Text x,y+200, "   näitä."
+            Text x,y+215, " - Esteet: Samannäköisiä kuin peilit, mutta eri värisiä. Valo ei saa osua esteeseen,"
+            Text x,y+230, "   tai muuten sen kulku estyy. Vain kentän tekijä voi asettaa näitä."
+            Text x,y+245, " - Kohteet: Suorakaiteen muotoisia alueita, joille valo on ohjattava. Vain kentän"
+            Text x,y+260, "   tekijä voi asettaa näitä."
+            Text x,y+275, " - Estoalueet: Suorakaiteen muotoisia alueita, joiden kohdalla peilien asettaminen ei"
+            Text x,y+290, "   ole sallittua. Vain kentän tekijä voi asettaa näitä."
+            
+            Text x,y+320, "Kentän tekijä voi antaa kentälle nimen sekä merkitä itsensä sen tekijäksi. Kentälle"
+            Text x,y+335, "voi myös asettaa salasanan, joka on tiedettävä jos kenttää haluaa muokata. Kentän"
+            Text x,y+350, "pelaamista salasanasuojaus ei estä."
+            
+        ElseIf pelaaminen Then
+            Text x,y+20,  "Ennen varsinaista pelaamista kannattaa käydä läpi tutoriaalikentät (1-3). Varsinainen"
+            Text x,y+35,  "pelaaminen kannattaa aloittaa 'Ensimmäiset askeleet' -kentästä. Valitse työkaluksi"
+            Text x,y+50,  "Luo peili. Peili luodaan painamalla hiiren vasen nappi pohjaan taustaruudukon päällä"
+            Text x,y+65,  "ja raahaamalla hiirtä johonkin suuntaan. Kun lopetat painamisen, peili luodaan."
+            Text x,y+80,  "Huomaat, että kentällä on jo entuudestaan paljon peilejä. Valitse nyt työkalu Siirrä"
+            Text x,y+95,  "osia. Voit liikuttaa luomaasi peiliä tarraamalla kiinni peilin jommasta kummasta"
+            Text x,y+110, "päästä. Tällöin liikutat vain peilin toista päätä ja voit muuttaa peilin kulmaa sekä"
+            Text x,y+125, "pituutta. Liikuttaaksesi koko peiliä, nappaa hiirellä kiinni mistä tahansa kohtaa"
+            Text x,y+140, "peiliä, mutta ei päistä. Jos valitset työkaluksi Poista Osia, voit poistaa luomiasi"
+            Text x,y+155, "peilejä klikkaamalla niitä."
+            
+            Text x,y+185, "Peilejä ei voi luoda estoalueiden kohdalle. Estoalueet näyttävät tältä:"
+            Color EstoalueR,EstoalueG,EstoalueB
+            PiirräEstoalue(x,y+205,50,50)
+            Color 0,0,0
+            
+            Text x,y+265, "Valonsädettä ei saa päästää ulos kentältä eikä se myöskään saa osua esteeseen. Esteet"
+            Text x,y+280, "näyttävät tältä:"
+            Color EsteR,EsteG,EsteB
+            ShadedLine(x,y+300,x+50,y+300)
+            Color 0,0,0
+            
+            Text x,y+330, "Valonsäteen tulee osua kaikkiin kohteisiin. Kohteet näyttävät tältä:"
+            Color Kohde1R,Kohde1G,Kohde1B
+            PiirräKohde(x,y+345,50,50)
+            Color 0,0,0
+            
+            Text x,y+405, "Valonsäde lähtee valonlähteestä:"
+            PiirräValonlähde(x+20,y+425)
+            
+        ElseIf kenttienluominen Then
+            Text x,y+20,  "Jos osaat jo luoda peilejä sekä käyttää siirto- ja poistotyökaluja, voit alkaa tehdä"
+            Text x,y+35,  "omia kenttiä, mikäli haluat. Valitse vain valikosta Uusi Kenttä. Aloitetaan tyhjältä"
+            Text x,y+50,  "pöydältä asettamalla kentälle valonlähde käyttämällä Aseta Valonlähde -työkalua."
+            Text x,y+65,  "Klikkaa valonlähde kentällä jonnekin. Voit myös pitää hiirtä pohjassa siirtäessäsi"
+            Text x,y+80,  "valonlähdettä. Kun olet valmis, liikuta hiiri valonlähteen päälle, mutta ei ihan"
+            Text x,y+95,  "keskelle. Valonlähteen ympärille tulee neljä vihreää nuolta. Paina hiiren vasen nappi"
+            Text x,y+110, "pohjaan ja liikuta hiirtä. Nyt huomaat, että valonlähde muuttaa suuntansa kohti"
+            Text x,y+125, "hiirtä. Voit suunnata valonlähteen minne haluat. Jos kaipaat tarkempaa suuntausta,"
+            Text x,y+140, "paina Control-näppäin pohjaan, jolloin saat 360 suuntaa käyttöösi. Vapauta hiiren"
+            Text x,y+155, "nappi kun olet valmis, ja vasta sen jälkeen vapauta Control, jos sitä käytit."
+            
+            Text x,y+185, "Kokeile nyt luoda peilejä, esteitä, kohteita ja estoalueita mielesi mukaan. Siirrä"
+            Text x,y+200, "Osia ja Poista Osia -työkalut toimivat myös näissä elementeissä. Kohteissa ja esto-"
+            Text x,y+215, "alueissa Siirrä Osia -työkalu tosin toimii hieman omalaatuisesti: nappaa kiinni"
+            Text x,y+230, "kohteen tai estoalueen VASEMMASTA YLÄNURKASTA, ja voit liikuttaa sitä. Nappaa sitten"
+            Text x,y+245, "kiinni OIKEASTA ALANURKASTA, niin voit muuttaa sen kokoa."
+            
+            Text x,y+275, "Voit tallentaa kentän missä tahansa vaiheessa painamalla Tallenna-nappulaa. Kentän"
+            Text x,y+290, "ominaisuuksia pääset muuttamaan painamalla Kentän ominaisuudet -nappulaa. Eteesi"
+            Text x,y+305, "aukeaa ikkuna, josta voit määrittää kentän nimen, tekijän ja halutessasi salasanan."
+            Text x,y+320, "Voit myös lukita kentässä olevat osat (elementit) tai poistaa lukituksen. Voit asettaa"
+            Text x,y+335, "peileille maksimimäärän, jonka täytyttyä peilejä ei voi enää luoda. Tämä voi olla"
+            Text x,y+350, "jännittävä lisäpiirre joissakin kentissä. Kun kenttä on täysin valmis, laita täppä"
+            Text x,y+365, "kohtaan Kenttä on valmis. Kenttä pitää tätä ennen olla tallennettuna johonkin tiedos-"
+            Text x,y+380, "toon. Tämän jälkeen laita vielä täppä kohtaan Tallenna kun painan ok. Kentän merkit-"
+            Text x,y+395, "seminen valmiiksi tekee siitä pelattavan poistaen liiat työkalut, tallennusmahdolli-"
+            Text x,y+410, "suuden sekä mahdollistamalla toplistan. Tallenna kun painan ok -kohta taas"
+            Text x,y+425, "tallentaa kentän viimeiset muutokset niin itse kentässä kuin sen ominaisuuksissakin."
+            
+        ElseIf lisää Then
+            Text x,y+20,  "Tämä kohta sisältää muutaman lisäohjeen eri asioihin liittyen."
+        
+            Text x,y+50,  "Mikäli muokkaat kenttää, joka on aiemmin merkitty valmiiksi, mene kentän ominaisuuk-"
+            Text x,y+65,  "siin ja ota täppä pois kohdasta Kenttä on valmis. Nyt voit muokata kenttää kunnolla."
+            Text x,y+80,  "Kun laitat täpän takaisin tähän kohtaan, kannattaa sinun jättää täppä kohtaan Tyhjennä"
+            Text x,y+95,  "toplista. Muuttuneen kentän vanhat toplistamerkinnät nimittäin saattavat olla epä-"
+            Text x,y+110, "oikeudenmukaisia tuleviin merkintöihin nähden."
+            
+            Text x,y+140, "Voit kirjoittaa tekstiä luomiisi kenttiin valitsemalla Kirjoita tekstiä -työkalun."
+            Text x,y+155, "Klikkaa sitten kentällä kohtaa, johon haluat tekstin kirjoittaa. Esiin aukeavaan"
+            Text x,y+170, "ikkunaan kirjoitat haluamasi tekstin sekä tekstilaatikon leveyden merkkeinä. Voit"
+            Text x,y+185, "siirtää tekstilaatikkoa myöhemmin Siirrä osia -työkalulla. Jos haluat muokata tekstiä,"
+            Text x,y+200, "valitse jälleen Kirjoita tekstiä -työkalu ja klikkaa luomasi tekstilaatikon päällä."
+            
+            Text x,y+230, "Työkaluja ei ole pakko valita klikkaamalla valintoja, vaan voit tehdä valinnan myös"
+            Text x,y+245, "hiiren rullaa vierittämällä."
+            
+        ElseIf tekijä Then
+            Text x,y+20,  "SunBEAM-pelin olen tehnyt minä, Jarkko Linnanvirta. Pelin kaikki materiaali"
+            Text x,y+35,  "on joko itse tuotettua tai luvallisesti muualta hankittua. Minulle voi lähettää"
+            Text x,y+50,  "pelistä palautetta esimerkiksi sähköpostilla osoitteeseen kpelit2003@hotmail.com tai"
+            Text x,y+65,  "netissä www.kpelit.urli.net (tai koti.mbnet.fi/jare1/kpelit/)."
+            
+            Text x,y+95,  "Peli "+Lower("ON")+" tekijänoikeuslain suojaama. Peliä saa käyttää ja levittää vapaasti, kunhan"
+            Text x,y+110, "sitä ei ole muokattu ja siitä ei peritä maksua. Ehtoa saa rikkoa ainostan minun"
+            Text x,y+125, "luvallani."
+            
+            Text x,y+155, "Kiitokset seuraaville:"
+            Text x,y+170, " - CoolBasic (www.coolbasic.com): Loistava ohjelmointikieli, jolla tämä peli on tehty."
+            Text x,y+185, " - CBSDK (koti.mbnet.fi/cbsdk/): Hyvä funktiokirjasto, auttanut tässä pelissä paljon."
+            Text x,y+200, " - CBKK (cbkk.arkku.net): Toinen hyvä funktiokirjasto, josta on tässä pelissä ollut apua."
+            Text x,y+215, " - CoolText (www.cooltext.com): Valikon nappulat sain täällä tehtyä kätevästi."
+            Text x,y+230, " - The Boris: Testaus ja pari grafiikkaa"
+            Text x,y+245, " - Jussi (jussisoftware.urli.net): Testaus"
+            Text x,y+260, " - Shogo Kawada: Testaus ja taustakuva"
+            Text x,y+275, " - Dy3r: Testaus"
+            Text x,y+290, " - Marcoder: Nettikomennot päivityksiä varten"
+            
+            Text x,y+345, "Copyright © 2006 - 2007 Jarkko Linnanvirta"
+            
+        End If
+        
+        
+        ok = CmdButton("Ok", IkkunaX+2,IkkunaY+h-23,w-5,20)
+        DrawScreen
+        PäivitäMusiikki()
+    Until ok
+    DeleteImage tausta
+End Function
+
+Function ShadedLine(x1#,y1#,x2#,y2#)
+    width=GrafiikanKoko
+    'Katsotaan nykyinen väri
+    puna#=getRGB(RED)
+    vihr#=getRGB(GREEN)
+    sini#=getRGB(BLUE)
+    angle#=GetAngle(x1,y1,x2,y2)
+    For w#=-width to width
+        wa#=Abs(w)
+        r#=puna-(puna*wa/width)
+        g#=vihr-(vihr*wa/width)
+        b#=sini-(sini*wa/width)
+        Color r,g,b
+        If Not (getRGB(RED)=0 And getRGB(GREEN)=0 And getRGB(BLUE)=0) Then
+            Line x1+Sin(angle)*w,y1+Cos(angle)*w,x2+Sin(angle)*w,y2+Cos(angle)*w
+            Line x1+Sin(angle)*w-1,y1+Cos(angle)*w,x2+Sin(angle)*w-1,y2+Cos(angle)*w
+        End If
+    Next w#
+    Color puna,vihr,sini
+End Function
+
+Function PiirräEstoalue(x,y,w,h)
+    //Piirtää yhden estoalueen
+    
+    ShadedLine(x,y,x+w,y)
+    ShadedLine(x,y,x,y+h)
+    ShadedLine(x+w,y,x+w,y+h)
+    ShadedLine(x,y+h,x+w,y+h)
+    
+    ShadedLine(x,y,x+w,y+h)
+    ShadedLine(x,y+h,x+w,y)
+End Function
+
+Function ValitseVäri(x,y)
+    If MouseUp(1) Then Return False
+    y=y-ImageHeight(Palettikuva)
+    DrawImage Palettikuva,x,y
+    If MouseX()=>x And MouseX()<=x+ImageWidth(Palettikuva)-1 And MouseY()=>y And MouseY()<=y+ImageHeight(Palettikuva)-1 And MouseDown(1) Then
+        PickImageColor Palettikuva, MouseX()-x,MouseY()-y
+        ValittuR=getRGB(RED) : ValittuG=getRGB(GREEN) : ValittuB=getRGB(BLUE)
+        Return True
+    End If
+End Function
+
+Function PiirräKohde(x,y, w,h)
+    Box x,y, w,h, ON
+    ShadedLine(x,y,x+w,y)
+    ShadedLine(x,y,x,y+h)
+    ShadedLine(x,y+h,x+w,y+h)
+    ShadedLine(x+w,y,x+w,y+h)
+End Function
+
+Function TarinaIkkuna()
+    tausta = KaappaaKuva()
+    AlustaIkkuna()
+    Repeat
+        DrawImage tausta, 0,0
+        w=500
+        h=380
+        Ikkuna("Tarina", w,h)
+        x=IkkunaX+5
+        y=IkkunaY+28
+        
+        Text x,y    , "Pentti Erkkilä on koko ikänsä ollut kiinnostunut tietokoneista. Niinpä hän oli myös"
+        Text x,y+15 , "töissä eräässä atk-alan yrityksessä. Eräänä päivänä hänen koneensa kuitenkin jumiutui"
+        Text x,y+30 , "ja hän kirosi rakkinettaan niin, että sai potkut töistään. Ongelmaan tarkemmin"
+        Text x,y+45 , "perehdyttyään Pentti huomasi sen olevan yleinen. Ohjelmistot päivittyvät, mutta"
+        Text x,y+60 , "tietokoneiden rautapuoli ei ole viimeaikoina päivittynyt ollenkaan entiseen tahtiin."
+        
+        Text x,y+90 , "Intel ja AMD ovat nimittäin joutuneet ongelmiin suorittimiensa kanssa. Suorittimissa"
+        Text x,y+105, "käytettävät puolijohteet ovat aivan huippuunsa viritetyt, eikä lisätehoa näin"
+        Text x,y+120, "ollen voi nykyisellä tekniikalla hankkia. Nyt yhtiöt vääntävät kättä siitä, kumman"
+        Text x,y+135, "vika tämä tilanne "+Lower("ON.")
+        
+        Text x,y+165, "Viimein Pentti keksi ongelmaan ratkaisun. Puolijohteet voidaan korvata optisilla"
+        Text x,y+180, "härpäkkeillä, jotka siis toimivat valon avulla ja ovat näin huimasti nopeampia. Pentti"
+        Text x,y+195, "tarjosi ratkaisuaan molemmille suoritinvalmistajille."
+        
+        Text x,y+225, "Mutta Intelin ja AMD:n suunnittelijat olivat tulleet kaheleiksi. He eivät saaneet"
+        Text x,y+240, "uusia suoritinrakennesuunnitelmia toimimaan. Niinpä kaikki suunnitelmat lähetettiin"
+        Text x,y+255, "Pentille korjattavaksi. Sinun tehtäväsi on olla Pentti ja saattaa valonsäde suunni-"
+        Text x,y+270, "telmissa kuvattuihin kohteisiin, jotta uudet suorittimet saataisiin toimimaan."
+        
+        ok = CmdButton("Ok", IkkunaX+2,IkkunaY+h-23,w-5,20)
+        DrawScreen
+        PäivitäMusiikki()
+    Until ok
+    DeleteImage tausta
+End Function
+
+Function TarkistaTiedostot()
+    //Tarkistaa että pelin kaikki tiedostot löytyvät ja ovat kunnossa
+    //Selvittää samalla myös pelin version
+    If Not FileExists("data\SunBEAM.dat") Then MakeError "Tiedostoa Data\SunBEAM.dat ei löydy."
+    If FileSize("data\SunBEAM.dat") < 500 Then MakeError "Tiedosto Data\SunBEAM.dat ei ole kunnossa."
+    
+    f = OpenToRead("data\SunBEAM.dat")
+    Versio = DeCrypt2(OhjelmanSalasana,ReadString(f))
+    While Not EOF(f)
+        Tiedosto$ = DeCrypt2(OhjelmanSalasana,ReadString(f))
+        Tarkistussumma$ = DeCrypt2(OhjelmanSalasana,ReadString(f))
+        If Not FileExists(Tiedosto) Then MakeError "Tiedostoa "+Tiedosto+" ei löydy."
+        If Tarkistussumma <> Crc32(Tiedosto) Then MakeError "Tiedosto "+Tiedosto+" ei ole kunnossa."
+    Wend
+End Function
+
+Function HiiriLiikkunut()
+    NykSijainti = MouseX()+MouseY()
+    If NykSijainti<>HiirenVanhaSijainti Then
+        HiirenVanhaSijainti=NykSijainti
+        Return True
+    End If
+End Function
+
+Function PäivitäGrafiikka(asd=0)
+    If asd=1 Or asd=0 Then
+        For p.Peilit = Each Peilit
+            If p\Img<>0 Then DeleteImage p\Img
+            w = Abs(p\x1-p\x2)
+            h = Abs(p\y1-p\y2)
+            p\Img = MakeImage(w+20,h+20)
+            alx=10 : aly=10
+            lopx=w+10 : lopy=h+10
+            If p\x2<p\x1 Then alx=w+10:lopx=10
+            If p\y2<p\y1 Then aly=h+10:lopy=10
+            DrawToImage p\Img
+            Color PeiliR,PeiliG,PeiliB
+            ShadedLine(alx,aly, lopx,lopy)
+        Next p
+    End If
+    
+    If asd=2 Or asd=0 Then
+        For e.Esteet = Each Esteet
+            If e\Img<>0 Then DeleteImage e\Img
+            w = Max(e\x1,e\x2)-Min(e\x1,e\x2)
+            h = Max(e\y1,e\y2)-Min(e\y1,e\y2)
+            If w=0 Then w+1
+            If h=0 Then h+1
+            e\Img = MakeImage(w+20,h+20)
+            DrawToImage e\Img
+            alx=10 : lopx=w+9
+            aly=10 : lopy=h+9
+            If e\x2<e\x1 Then alx=w+9:lopx=10
+            If e\y2<e\y1 Then aly=h+9:lopy=10
+            Color EsteR,EsteG,EsteB
+            ShadedLine(alx,aly, lopx,lopy)
+        Next e
+    End If
+    
+    If asd=3 Or asd=0 Then
+        SetFont FNT_Pieni
+        For t.Tekstit = Each Tekstit
+            If t\Img <> 0 Then DeleteImage t\Img
+            w = t\w
+            teksti$ = t\Teksti
+            imgW = w*TextWidth("M")+10
+            imgH = TextRows(teksti,imgW-10)*TextHeight(teksti)+10
+            t\Img = MakeImage(imgW,imgH)
+            DrawToImage t\Img
+            Color cbBlackSKin : Box 0,0, imgW  ,imgH
+            Color cbGold      : Box 2,2, imgW-4,imgH-4
+            Color 0,0,0
+            RowText(teksti, 5,5, ImgW-10, ON, ON)
+        Next t
+        SetFont FNT_Tavallinen
+    End If
+        
+    DrawToScreen
+End Function
+
+Function TextRows(t$, w)
+    result=1
+    For i = 1 To CountWords(t)
+        If TextWidth(row$+" "+GetWord(t,i)) < w Then
+            row=row+" "+GetWord(t,i)
+        Else
+            result+1
+            row=GetWord(t,i)
+        End If
+    Next i
+    Return result
+End Function
+
+Function Ääni(tiedosto$)
+    If ÄänetSallittu Then
+        Return PlaySound("Data\"+tiedosto)
+    End If
+End Function
+
+Function WrapAngle180(angle#)
+    angle=WrapAngle(angle)
+    If angle>180 Then angle-180
+    Return angle
+End Function
+
+Function Toggle(arvo$,eka$="1",toka$="0")
+    If arvo=eka Then Return toka Else Return eka
+End Function
+
+Function KirjoitaTeksti(muokkaa=0)
+    tausta = KaappaaKuva()
+    AlustaIkkuna()
+    w=300
+    h=100
+    If muokkaa Then
+        teksti$ = setText(TekstilaatikkoTxt)
+        leveys$ = setText(TekstilaatikkoLeveys)
+    Else
+        leveys = setText("20")
+    End If
+    Repeat
+        DrawImage tausta, 0,0
+        Ikkuna("Kirjoita teksti", w,h)
+        x = IkkunaX + 5 : y = IkkunaY + 28
+        Text x,y, "Teksti:"
+        key=GetKey()
+        teksti = InputField(key, x+50, y-2, 235, 16, teksti)
+        Text x,y+20, "Tekstilaatikon leveys:"
+        leveys = InputField(key, x+130,y+20, 155,16, leveys)
+        ok = (CmdButton("Ok", x,y+45, w/2-9,20) And getText(teksti) <> "" And getText(leveys) <> "")
+        peruuta = CmdButton("Peruuta", x+w/2-5, y+45, w/2-9,20)
+        DrawScreen
+    Until ok Or peruuta
+    TekstilaatikkoTxt = getText(teksti)
+    TekstilaatikkoLeveys = getText(leveys)
+    Return ok
+    DeleteImage tausta
+End Function
+
+
+Function PiirräTekstit()
+    For t.Tekstit = Each Tekstit
+        DrawImage t\Img, t\x,t\y
+    Next t
+End Function

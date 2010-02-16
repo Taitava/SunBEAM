@@ -1,0 +1,509 @@
+SCREEN 640,480
+ClsColor cbgold
+
+Include "sdk.cb"
+remend
+
+    'Peilit
+        Type Peilit
+            Field x1
+            Field y1
+            Field x2
+            Field y2
+            Field lukittu
+            Field osumia                    'kuinka monesti tiettyyn peiliin on osuttu
+            Field SaaTallentaa              'pelaajan luomia peilej‰ ei saa tallentaa toplistan tallennuksen yhteydess‰
+            Field Estetty                   'Jos sijaitsee estoalueella, niin liikuttaminen estet‰‰n
+            Field Img                       'Kuva, johon ko. elementti on piirretty
+        End Type
+        Global Peilej‰                      'Kuinka monta peili‰ kent‰ll‰ ON yhteens‰
+        Global Peilej‰Korkeintaan           'Kuinka monta peili‰ kent‰ll‰ voi olla korkeintaan
+        Global PeilinPituusKorkeintaan      'Kuinka pitk‰ yksi peili voi olla korkeintaan
+        Global PeilitImg                    'Sis‰lt‰‰ kuvan kaikista peileist‰
+        Global PeilitLukkoImg               'Sis‰lt‰‰ kuvan lukituista peileist‰
+        Global PeilitMuuttuneet             'Jos true, niin ko. elementit on piirrett‰v‰ uudelleen
+        
+    'Kohteet
+        Type Kohteet
+            Field x
+            Field y
+            Field w
+            Field h
+            Field t‰ytetty
+            Field lukittu
+        End Type
+        Global T‰ytettyj‰Kohteita
+        Global Kohteita
+        Global KohteetImg
+        Global KohteetMuuttuneet             'jos true, niin ko. elementit on piirrett‰v‰ uudelleen
+        
+    'Estoalueet
+        Type Estoalueet
+            Field x
+            Field y
+            Field w
+            Field h
+            Field lukittu
+        End Type
+        Global Estoalueita
+        Global EstoalueetImg
+        Global EstoalueetMuuttuneet         'jos true, niin ko. elementit on piirrett‰v‰ uudelleen
+        
+    'Esteet
+        Type Esteet
+            Field x1
+            Field y1
+            Field x2
+            Field y2
+            Field lukittu
+            Field Img 'Kuva, johon ko. elementti on piirretty
+        End Type
+        Global Esteit‰
+        Global EsteetImg
+        Global EsteetLukkoImg
+        Global EsteetMuuttuneet 'jos true, niin ko. elementit on piirrett‰v‰ uudelleen
+        
+    'Tekstit
+        Type Tekstit
+            Field Teksti As String
+            Field x
+            Field y
+            Field w
+            Field h
+            Field Img 'Kuva, johon ko. elementti on piirretty
+        End Type
+        Global TekstilaatikkoTxt as string 'Teksti, jonka KirjoitaTeksti() palauttaa
+        Global TekstilaatikkoLeveys        'Leveys, jonka KirjoitaTeksti() palauttaa
+
+    'Valons‰de
+        Global S‰deOlemassa
+        Global S‰deX, S‰deY
+        Global S‰deDir
+        Global SunBeam 'SunBEAM-s‰teen kuva
+        SunBeam = MakeImage(ScreenWidth(),ScreenHeight())
+        Global SunBEAMError As String
+        Global Osumia
+        Global OsumiaEnint‰‰nYhdess‰Peiliss‰
+        Global KuljettuMatka As Float
+        Global Laskentaaika
+        
+    'Kent‰n tiedot
+        Global Kent‰nNimi As String : Kent‰nNimi="Nimetˆn"
+        Global Kent‰nTekij‰ As String
+        Global Kent‰nSalasana As String
+        Global Kent‰nTiedosto As String
+        Global Kentt‰Valmis As Byte
+        Global Kent‰nVaikeusaste As Byte '0: Helppo 1: Vaikea 2: Todella vaikea
+        Global TMR_Kentt‰Ladattu 'Timer():n arvo kun kentt‰ ladattiin
+        Dim VaikeusasteStr(2) As string 'Sis. eri Vaikeusasteiden nimet
+        VaikeusasteStr(0) = "Helppo"
+        VaikeusasteStr(1) = "Vaikea"
+        VaikeusasteStr(2) = "Todella vaikea"
+        
+    'Toplista
+        Const ToplistaKoko = 10
+        Dim Toplista(ToplistaKoko,2) As String 'Sis. toplistan. Viimeisen ulottuvuuden tiedot: 0:nimi, 1:pisteet, 2:p‰iv‰m‰‰r‰
+        
+    'Muut
+        Const OhjelmanSalasana = "pe943ndk48yd8fg5o94d"
+
+oldDir$ = CurrentDir()
+ChDir "Kent‰t"
+StartSearch
+Repeat
+    tiedosto$ = FindFile()
+    If lower(Right(tiedosto,4)) = ".sun" Then
+        f = OpenToRead(tiedosto)
+        If ReadShort(f) = 18475 Then
+            AddListItem(1,tiedosto)
+        End If
+    End If
+Until tiedosto = ""
+EndSearch
+ChDir oldDir
+Color 0,0,0
+Repeat
+    List(1, 500,2,138,476)
+    If ListSelectionChanged(1) Then
+        Tyhjenn‰Kentt‰()
+        AvaaKentt‰(GetListSelection(1))
+        Valittu = 0
+        SetWindow Kent‰nNimi
+    End If
+    
+    Text 0,0, "Nimi"
+    Text 180,0, "Kuljettu matka"
+    Text 400,0, "P‰iv‰m‰‰r‰"
+    
+    For i = 1 To ToplistaKoko
+        y=15*i
+        If MouseZoneHit(1, 0,y, 500,15) And Toplista(i,0) <> "" Then Valittu = i
+        If Valittu=i Then Color 255,255,255 Else Color 0,0,0
+        Text 0,y, Toplista(i,0)
+        Text 180,y, Toplista(i,1)
+        Text 400,y, Toplista(i,2)
+    Next i
+    
+    poista = CmdButton("Poista", 5,400, 100,20)
+    tallenna = CmdButton("Tallenna", 110,400, 100,20)
+    
+    If poista And Valittu Then
+        For i = Valittu To ToplistaKoko
+            If i < ToplistaKoko Then
+                Toplista(i,0) = Toplista(i+1,0)
+                Toplista(i,1) = Toplista(i+1,1)
+                Toplista(i,2) = Toplista(i+1,2)
+            Else
+                Toplista(i,0) = ""
+                Toplista(i,1) = ""
+                Toplista(i,2) = ""
+            End If
+        Next i
+    End If
+    If tallenna Then TallennaKentt‰(Kent‰nTiedosto)
+    DrawScreen
+Forever
+
+Function MouseZoneHit(but, x,y, w,h)
+    Return (MouseX() >= x And MouseX() <= x+w-1 And MouseY() >= y And MouseY() <= y+h-1 And MouseHit(but))
+End Function
+
+
+Function TallennaKentt‰(tiedosto$)
+    If Left(Lower(tiedosto),7) <> "kent‰t\" and Left(Lower(tiedosto),7) <> "kent‰t/" then tiedosto = "Kent‰t\"+tiedosto
+    f = OpenToWrite(tiedosto)
+    WriteShort f, "18475" 'tunnus, jolla tiedosto tunnistetaan avattaessa sopivaksi
+    WriteString f, EnCrypt2(OhjelmanSalasana,Kent‰nNimi)
+    WriteString f, EnCrypt2(OhjelmanSalasana,Kent‰nSalasana)
+    WriteString f, EnCrypt2(OhjelmanSalasana,Kent‰nTekij‰)
+    WriteByte f, Kentt‰Valmis
+    WriteShort f, Peilej‰Korkeintaan
+    WriteShort f, S‰deX
+    WriteShort f, S‰deY
+    WriteShort f, S‰deDir
+    WriteByte f, Kent‰nVaikeusaste
+    
+    For p.Peilit = Each Peilit
+        If p\SaaTallentaa Then
+            WriteShort f, 1111
+            WriteShort f, p\x1
+            WriteShort f, p\y1
+            WriteShort f, p\x2
+            WriteShort f, p\y2
+            WriteShort f, p\lukittu
+        End If
+    Next p
+    For m.Kohteet = Each Kohteet
+        WriteShort f, 2222
+        WriteShort f, m\x
+        WriteShort f, m\y
+        WriteShort f, m\w
+        WriteShort f, m\h
+        WriteShort f, m\lukittu
+    Next m
+    For e.Estoalueet = Each Estoalueet
+        WriteShort f, 3333
+        WriteShort f, e\x
+        WriteShort f, e\y
+        WriteShort f, e\w
+        WriteShort f, e\h
+        WriteShort f, e\lukittu
+    Next e
+    For ee.Esteet = Each Esteet
+        WriteShort f, 4444
+        WriteShort f, ee\x1
+        WriteShort f, ee\y1
+        WriteShort f, ee\x2
+        WriteShort f, ee\y2
+        WriteShort f, ee\lukittu
+    Next ee
+    For t.Tekstit = Each Tekstit
+        WriteShort f, 5555
+        WriteString f, EnCrypt2(OhjelmanSalasana,t\Teksti)
+        WriteShort f, t\x
+        WriteShort f, t\y
+        WriteShort f, t\w
+    Next t
+    For i = 1 To ToplistaKoko
+        WriteShort f, 9999
+        WriteString f,EnCrypt2(OhjelmanSalasana,Toplista(i,0))
+        WriteString f,EnCrypt2(OhjelmanSalasana,Toplista(i,1))
+        WriteString f,EnCrypt2(OhjelmanSalasana,Toplista(i,2))
+    Next i
+    WriteShort f, 8888 'Muut yksitt‰iset arvot (muista laittaa 8888 joikaista t‰llaista arvoa ennen!)
+    WriteShort f, PeilinPituusKorkeintaan 'Ollut mukana ver 1.5 l‰htien
+    CloseFile f
+End Function
+
+Function AvaaKentt‰(tiedosto$)
+    Tyhjenn‰Toplista() 'pyyhit‰‰n vanha toplista pois
+    If Left(Lower(tiedosto),7) <> "kent‰t\" and Left(Lower(tiedosto),7) <> "kent‰t/" then tiedosto = "Kent‰t\"+tiedosto
+    If Not FileExists(tiedosto) Then MakeError "Map file '"+tiedosto+"' does not exist."
+    f = OpenToRead(tiedosto)
+    If ReadShort(f) <> "18475" Then MakeError "File '"+tiedosto+"' is not a proper SunBEAM file."
+    Kent‰nTiedosto = tiedosto
+    Kent‰nNimi = DeCrypt2(OhjelmanSalasana,ReadString(f))
+    Kent‰nSalasana = DeCrypt2(OhjelmanSalasana,ReadString(f))
+    Kent‰nTekij‰ = DeCrypt2(OhjelmanSalasana,ReadString(f))
+    Kentt‰Valmis = ReadByte(f)
+    Peilej‰Korkeintaan = ReadShort(f)
+    S‰deX = ReadShort(f)
+    S‰deY = ReadShort(f)
+    S‰deDir = ReadShort(f)
+    S‰deOlemassa=True
+    Kent‰nVaikeusaste = ReadByte(f)
+    While Not EOF(f)
+        value = ReadShort(f)
+        If value = 1111 Then 'peilit
+            x1 = ReadShort(f)
+            y1 = ReadShort(f)
+            x2 = ReadShort(f)
+            y2 = ReadShort(f)
+            lukittu = ReadShort(f)
+            LuoPeili(x1,y1,x2,y2,lukittu)
+        End If
+        If value = 2222 Then 'Kohteet
+            x = ReadShort(f)
+            y = ReadShort(f)
+            w = ReadShort(f)
+            h = ReadShort(f)
+            lukittu = ReadShort(f)
+            LuoMaali(x,y,w,h,lukittu)
+        End If
+        If value = 3333 Then 'Estoalueet
+            x = ReadShort(f)
+            y = ReadShort(f)
+            w = ReadShort(f)
+            h = ReadShort(f)
+            lukittu = ReadShort(f)
+            LuoEstoalue(x,y,w,h,lukittu)
+        End If
+        If value = 4444 Then 'Esteet
+            x1 = ReadShort(f)
+            y1 = ReadShort(f)
+            x2 = ReadShort(f)
+            y2 = ReadShort(f)
+            lukittu = ReadShort(f)
+            LuoEste(x1,y1, x2,y2, lukittu)
+        End If
+        If value = 5555 Then 'Tekstit
+            teksti$ = DeCrypt2(OhjelmanSalasana,ReadString(f))
+            x = ReadShort(f)
+            y = ReadShort(f)
+            w = ReadShort(f)
+            t.Tekstit = New(Tekstit)
+            t\Teksti = teksti
+            t\x = x
+            t\y = y
+            t\w = w
+        End If
+        If value=9999 Then 'Toplista
+            nimi$ = DeCrypt2(OhjelmanSalasana,ReadString(f))
+            pisteet$ = DeCrypt2(OhjelmanSalasana,ReadString(f))
+            pvm$ = DeCrypt2(OhjelmanSalasana,ReadString(f))
+            Lis‰‰Toplistaan(nimi,pisteet,pvm)
+        End If
+        If value=8888 Then 'Muut, yksitt‰iset arvot
+            PeilinPituusKorkeintaan = ReadShort(f) 'Ollut mukana ver 1.5 l‰htien
+        End If
+    Wend
+    CloseFile f
+    PeilitMuuttuneet=True
+    EsteetMuuttuneet=True
+    KohteetMuuttuneet=True
+    EstoalueetMuuttuneet=True
+    KuljettuMatka=0
+    TMR_Kentt‰Ladattu=Timer()
+End Function
+
+Function Lis‰‰Toplistaan(nimi$, pisteet, pvm$="")
+    For i = 1 To ToplistaKoko
+        If Int(Toplista(i,1))=pisteet Then Return False 'Sama tulos jo olemassa - hyl‰t‰‰n pistemerkint‰
+        If Int(Toplista(i,1))>pisteet Or Int(Toplista(i,1))=0 And sija=0 Then sija=i
+    Next i
+    For j=ToplistaKoko To sija+1 Step-1
+        Toplista(j,0)=Toplista(j-1,0)
+        Toplista(j,1)=Toplista(j-1,1)
+        Toplista(j,2)=Toplista(j-1,2)
+    Next j
+    Toplista(sija,0)=nimi
+    Toplista(sija,1)=pisteet
+    If pvm="" Then pvm=SiistiP‰iv‰m‰‰r‰(Date())
+    Toplista(sija,2)=pvm
+End Function
+
+Function EnCrypt2(CryptKey$,CryptText$)
+    //Lainattu osoitteesta
+    //http://www.coolbasic.com/forums/index.php?showtopic=427&st=0&p=3225&#entry3225
+    //Tehnyt: Nixe
+
+    Crypted$ = ""
+    Eu = 0
+    LnKey = Len(CryptKey$)   
+    LnText = Len(CryptText$)   
+    For Au = 1 To LnText
+        Eu = Eu + 1     
+        If Eu > LnKey Then Eu = 1
+        KeyValue = Asc(Mid(CryptKey$, Eu, 1))
+        Value = Asc(Mid(CryptText$, Au, 1)) 
+        Value = Value + KeyValue
+        If Value > 255 Then Value = Value - 255
+        Crypted$ = Crypted$ + Chr(Value)
+    Next Au 
+    Return Crypted$
+End Function
+
+Function DeCrypt2(CryptKey$,CryptText$)
+    //Lainattu osoitteesta
+    //http://www.coolbasic.com/forums/index.php?showtopic=427&st=0&p=3225&#entry3225
+    //Tehnyt: Nixe
+
+    Crypted$ = ""
+    Eu = 0
+    LnKey = Len(CryptKey$)
+    LnText = Len(CryptText$)
+    For Au = 1 To LnText
+        Eu = Eu + 1
+        If Eu > LnKey Then Eu = 1
+        KeyValue = Asc(Mid(CryptKey$,Eu,1))
+        Value = Asc(Mid(CryptText$,Au,1))
+        Value = Value - KeyValue
+        If Value < 0 Then Value = Value + 255
+        Crypted$ = Crypted$ + Chr(Value)
+    Next Au
+    Return Crypted$
+End Function
+
+Function Tyhjenn‰Toplista()
+    For i = 1 To ToplistaKoko
+        Toplista(i,0)=""
+        Toplista(i,1)=""
+        Toplista(i,2)=""
+    Next i  
+End Function
+
+Function LuoPeili(x1,y1,x2,y2,lukittu=0,saatallentaa=1)
+    For p.Peilit = Each Peilit
+        If p\x1=x1 And p\y1=y1 And p\x2=x2 And p\y2=y2 Then ƒl‰Luo=True
+        If p\x1=x2 And p\y1=y2 And p\x2=x1 And p\y2=y1 Then ƒl‰Luo=True
+    Next p
+    If Not ƒl‰Luo Then
+        p.Peilit = New(Peilit)
+        p\x1=x1
+        p\x2=x2
+        p\y1=y1
+        p\y2=y2
+        p\lukittu=lukittu
+        p\SaaTallentaa=saatallentaa
+        Peilej‰+1
+        If lukittu Then LukittujaOsia+1
+        PeilitMuuttuneet=True
+    End If
+End Function
+
+Function LuoMaali(x,y,w,h,lukittu=0)
+    For k.Kohteet = Each Kohteet
+        If k\x=x And k\y=y And k\w=w And k\w=w Then ƒl‰Luo=True
+    Next k
+    If Not ƒl‰Luo Then
+        m.Kohteet = New(Kohteet)
+        m\x=x
+        m\y=y
+        m\w=w
+        m\h=h
+        m\lukittu=lukittu
+        Kohteita+1
+        If lukittu Then LukittujaOsia+1
+        KohteetMuuttuneet=True
+    End If
+End Function
+
+Function LuoEstoalue(x,y,w,h,lukittu=0)
+    For e.Estoalueet = Each Estoalueet
+        If e\x=x And e\y=y And e\w=w And e\w=w Then ƒl‰Luo=True
+    Next e
+    If Not ƒl‰Luo Then
+        e.Estoalueet = New(Estoalueet)
+        e\x=x
+        e\y=y
+        e\w=w
+        e\h=h
+        e\lukittu=lukittu
+        Estoalueita+1
+        LukittujaOsia=LukittujaOsia+lukittu
+        EstoalueetMuuttuneet=True
+    End If
+End Function
+
+Function LuoEste(x1,y1, x2,y2, lukittu=0)
+    For e.Esteet = Each Esteet
+        If e\x1=x1 And e\y1=y1 And e\x2=x2 And e\y2=y2 Then ƒl‰Luo=True
+        If e\x1=x2 And e\y1=y2 And e\x2=x1 And e\y2=y1 Then ƒl‰Luo=True
+    Next e
+    If Not ƒl‰Luo Then
+        e.Esteet = New(Esteet)
+        e\x1=x1
+        e\y1=y1
+        e\x2=x2
+        e\y2=y2
+        e\lukittu=lukittu
+        LukittujaOsia = LukittujaOsia+lukittu
+        Esteit‰+1
+        EsteetMuuttuneet=True
+        DrawToScreen
+    End If
+End Function
+
+Function SiistiP‰iv‰m‰‰r‰(pvm$)
+    p=Left(pvm,2)
+    k$=Lower(Mid(pvm,4,3))
+    v=Right(pvm,4)
+
+    kuukaudet$="janfebmaraprmayjunjulaugsepoctnovdec"
+    For i = 1 To Len(kuukaudet) Step 3
+        kuu+1
+        If k=Mid(kuukaudet,i,3) Then Exit
+    Next i
+
+    Return Str(p)+"."+Str(kuu)+"."+Str(v)
+End Function
+
+Function Tyhjenn‰Kentt‰()
+    For p.Peilit = Each Peilit
+        If p\Img<>0 Then DeleteImage p\Img
+        Delete p
+    Next p
+    For m.Kohteet = Each Kohteet
+        Delete m
+    Next m
+    For e.Estoalueet = Each Estoalueet
+        Delete e
+    Next e
+    For ee.Esteet = Each Esteet
+        If ee\Img<>0 Then DeleteImage ee\Img
+        Delete ee
+    Next ee
+    For t.Tekstit = Each Tekstit
+        if t\Img <> 0 Then DeleteImage t\Img
+        Delete t
+    Next t
+    Kohteita=0
+    Peilej‰=0
+    LukittujaOsia=0
+    S‰deOlemassa=False
+    Kent‰nNimi="Nimetˆn"
+    Kent‰nSalasana=""
+    Kent‰nTekij‰=""
+    Estoalueita=0
+    Esteit‰=0
+    S‰deDir=0
+    Kent‰nTiedosto=""
+    PeilitMuuttuneet=True
+    EsteetMuuttuneet=True
+    KohteetMuuttuneet=True
+    EstoalueetMuuttuneet=True
+    Peilej‰Korkeintaan=0
+    Tyhjenn‰Toplista()
+    Kentt‰Valmis=False
+    PeilinPituusKorkeintaan=0
+End Function

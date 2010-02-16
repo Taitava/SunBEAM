@@ -1,0 +1,201 @@
+
+//**************************************
+//KÄYTTÄJÄN KONFIGUROIMAT TIEDOT ALKAVAT
+//**************************************
+
+Const OT_GAME_ID			= 3								'Testipelin id ON 1
+Const OT_GAME_PASSWORD		= "KHI8tsfi44oi7t89ef8YU68"		'Testipelin salasana ON tyhjä
+Const OT_GAME_VERSION		= 1								'Toplistan versio. KASVATA TÄTÄ LUKUA AINA KUN JULKAISET PELISTÄ UUDEN VERSION!
+Const OT_DEFAULT_URL		= "http://toplist.kpelit.net/"	'Oletusosoite, johon yhdistetään, mikäli ei ole tiedossa muuta osoitetta.
+Const OT_CONFIG_FILE		= "OnlineToplist.cfg"			'Konfiguraatiotiedosto, joka luodaan silloin jos yhteysosoite päivittyy toiseksi.
+
+//****************************************
+//KÄYTTÄJÄN KONFIGUROIMAT TIEDOT PÄÄTTYVÄT
+//****************************************
+
+Const OT_RECORD_SEPARATOR	= ";"							'|Palvelimelta tulevan datan erotinmerkit. Näitä ei tule muuttaa ellei muutoksia tehdä myös palvelimella.
+Const OT_VALUE_SEPARATOR	= ","							'|Näitä merkkejä ei tarvitse konvertoida pois merkkijonoista (nimimerkki) tässä CB-ohjelmassa, koska palvelin tekee tarvittavat konversiot automaattisesti.
+
+Include "MD5.cb"
+
+//******
+//TYYPIT
+//******
+
+Type OT_Scores
+	Field nick		As String
+	Field score		As Integer
+	Field date_		As String
+EndType
+
+
+//*******************
+//GLOBAALIT MUUTTUJAT
+//*******************
+//ÄLÄ MUUTA NÄITÄ ARVOJA!
+//Tee muutokset näihin arvoihin vain funktion OT_SetupGame() kautta!
+
+Global OT_GameMode			As Byte		: OT_GameMode			= 1
+Global OT_GameDifficulty	As Byte		: OT_GameDifficulty		= 1
+Global OT_GameMap			As String	: OT_GameMap			= "1"
+Global OT_ConnectUrl		As String	: OT_ConnectUrl			= OT_DEFAULT_URL
+Global OT_LastErrorNumber	As Byte		: OT_LastErrorNumber	= 0					'Jos viestinnässä palvelimen kanssa tapahtuu jokin virhe, tämän arvo ON <> 0
+Global OT_LastErrorString	As String	: OT_LastErrorString	= ""				'Tarkentava virheilmoitus.
+Global OT_CountScores		As Byte		: OT_CountScores		= 0					'Pistemerkintöjen määrä viimeksi ladatulla toplistalla
+
+
+//*****************
+//JULKISET FUNKTIOT
+//*****************
+//Käytä näitä funktioita omassa ohjelmassasi.
+
+Function OT_SetupGame(mode,difficulty,map$)
+	OT_GameMode			= mode
+	OT_GameDifficulty	= difficulty
+	OT_GameMap			= map
+	If FileExists(OT_CONFIG_FILE) Then
+		'Lue päivitetty yhteysosoite tekstitiedostosta
+		f = OpenToRead(OT_CONFIG_FILE)
+		OT_ConnectUrl = ReadLine(f)
+		CloseFile f
+	EndIf
+	OT_EmptyToplist()
+EndFunction
+
+Function OT_SubmitScore(nick$, score)
+	OT_CheckConnectionAddress()
+	nick			= Replace(nick,"'","") 'MD5()-funktio bugaa heittomerkkien kanssa, joten otetaan sellaiset pois nikistä.
+	hash$			= urlencode(OT_GenerateAddScoreHash(nick,score))
+	nick			= urlencode(nick) 'Älä syötä urlenkoodattua nikkiä OT_GenerateAddScoreHash()-funktiolle, koska silloin voisi tulla virheellinen hash!
+	result$			= GetHTTPString(OT_ConnectUrl+"?action=newscore&nick="+nick+"&score="+score+"&game="+OT_GAME_ID+"&mode="+OT_GameMode+"&version="+OT_GAME_VERSION+"&difficulty="+OT_GameDifficulty+"&map="+urlencode(OT_GameMap)+"&hash="+hash)
+	error_number$	= Left(result,1)
+	If error_number = "0" Then
+		Return True
+	Else
+		OT_LastErrorNumber	= Int(error_number)
+		If error_number = "-" Then	'Ei yhteyttä palvelimeen
+			OT_LastErrorString	= "Could n"+"ot connect t"+"o toplist server."
+		Else						'Palvelimen antama virheilmoitus
+			OT_LastErrorString	= Mid(result,2)
+		EndIf
+		Return False
+	EndIf
+EndFunction
+
+Function OT_GetToplist(limit=-1,sort_order$="")
+	OT_CheckConnectionAddress()
+	OT_EmptyToplist()
+	optional$ = ""
+	If limit		>	-1 Then optional = optional+"&limit="+limit
+	If sort_order	<>	"" Then optional = optional+"&sortorder="+sort_order
+	hash$			= urlencode(OT_GenerateGetScoresHash())
+	result$			= GetHTTPString(OT_ConnectUrl+"?action=getscores&game="+OT_GAME_ID+"&mode="+OT_GameMode+"&version="+OT_GAME_VERSION+"&difficulty="+OT_GameDifficulty+"&map="+urlencode(OT_GameMap)+"&hash="+hash+optional)
+	error_number$	= Left(result,1)
+	If error_number = "0" Then
+		score_data$ = Mid(result,2)
+		For i = 1 To CountWords(score_data,OT_RECORD_SEPARATOR)
+			record_data$	= GetWord(score_data, i, OT_RECORD_SEPARATOR)
+			If record_data <> "" Then
+				OT_CountScores	+ 1
+				ots.OT_Scores	= New(OT_Scores)
+				ots\nick		= GetWord(record_data, 1, OT_VALUE_SEPARATOR)
+				ots\score		= GetWord(record_data, 2, OT_VALUE_SEPARATOR)
+				ots\date_		= GetWord(record_data, 3, OT_VALUE_SEPARATOR)
+			EndIf
+		Next i
+		Return True
+	Else
+		OT_LastErrorNumber	= Int(error_number)
+		If error_number = "-" Then	'Ei yhteyttä palvelimeen
+			OT_LastErrorString = "Could n"+"ot connect t"+"o toplist server."
+		Else						'Palvelimen antama virheilmoitus
+			OT_LastErrorString = Mid(result,2)
+		EndIf
+		Return False
+	EndIf
+EndFunction
+
+Function OT_EmptyToplist()
+	//Tyhjentää toplistatyypin
+	//EI TYHJENNÄ PALVELIMELLA OLEVAA TOPLISTAA!
+	For ots.OT_Scores = Each OT_Scores
+		Delete ots
+	Next ots
+	OT_CountScores = 0
+EndFunction
+
+
+//*******************
+//YKSITYISET FUNKTIOT
+//*******************
+//Näitä funktioita ei tarvitse käyttää tämän kirjaston ulkopuolella.
+//Kirjasto käyttää näitä funktioita automaattisesti tarvittaessa.
+
+Function OT_CheckConnectionAddress()
+	result$			= GetHTTPString(OT_ConnectUrl+"?action=updateaddress")
+	error_number$	= Left(result,1)
+	If error_number = "0" Then 'Yhteys palvelimeen saatiin ja komennon suorittamisessa palvelimella ei ollut ongelmia.
+		update_address$ = Mid(result,2)
+		If update_address <> "" Then
+			'Yhteysosoite ON muuttumassa. Tallenna uusi osoite.
+			OT_ConnectUrl = update_address
+			f = OpenToWrite(OT_CONFIG_FILE)
+			WriteLine f, OT_ConnectUrl
+			CloseFile f
+		EndIf
+		Return True 'Tarkistus onnistui (mutta yhteysosoitetta ei VÄLTTÄMÄTTÄ muutettu)
+	Else
+		OT_LastErrorNumber	= Int(error_number)
+		If error_number = "-" Then	'Ei yhteyttä palvelimeen
+			OT_LastErrorString	= "Could n"+"ot connect t"+"o toplist server."
+		Else						'Palvelimen antama virheilmoitus
+			OT_LastErrorString	= Mid(result,2)
+		EndIf
+		Return False 'Tarkistus epäonnistui
+	EndIf
+EndFunction
+
+Function OT_GenerateAddScoreHash(nick$,score)
+	Return MD5(nick+score+OT_GAME_ID+OT_GameMode+OT_GAME_VERSION+OT_GameDifficulty+OT_GameMap+OT_GAME_PASSWORD)
+EndFunction
+
+Function OT_GenerateGetScoresHash()
+	'Plus-operaattorien matemaattinen toiminta tulee estää Str()-funktiolla! (tai tapahtuu hirveitä)
+	Return MD5(Str(OT_GAME_ID)+OT_GameMode+OT_GAME_VERSION+OT_GameDifficulty+OT_GameMap+OT_GAME_PASSWORD)
+EndFunction
+
+//Seuraava funktio on kopioitu 10.02.2010 osoitteesta http://cbkk.systec.fi/koodi.php?id=75
+//Tekijä: Bagard
+//Muutokset: Ei muutoksia
+Function URLEncode(url$)
+
+    For i = 1 To Len(url$)
+        char = Asc(Mid(url$, i, 1))
+
+        If (char <= 47) Or (char >= 58 And char <= 64) Or (char >= 91 And char <= 96) Or (char >= 123) Then
+            merkki$ = "%" + Right(Hex(char), 2)
+        Else
+            merkki$ = Chr(char)
+        EndIf
+
+        uusi$ = uusi$ + merkki$
+    Next i
+
+    Return uusi$
+
+End Function
+
+//Seuraavan funktion on tehnyt OonSuomesta
+//Muutokset: If nRet <> 200 riviltä otettu MakeError pois ja laitettu Return "-" tilalle.
+Function GetHTTPString$(_path$)
+    nRet = HTTPGet(_path)
+    // Tuli jotain muuta kuin olisi pitänyt
+    If nRet <> 200 Then Return "-"
+
+    HTTPLoadContent()
+    Dim palautus As String
+    For i = 1 To HTTP_ContentLength
+        palautus = palautus + Chr(_Net_GetByte())
+    Next i
+    Return palautus
+EndFunction

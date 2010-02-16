@@ -1,0 +1,905 @@
+//Sisältää SunBEAM:n käyttämät, SDK:sta poimitut funktiot.
+//Ne on siksi kopioitu tähän tiedostoon, että SDK:n includeissa tulee myös
+//funktioita, joita tämä peli ei tarvitse.
+
+Global YSwap
+oldR=getRGB(RED) : oldG=getRGB(GREEN) : oldB=getRGB(BLUE)
+Color 255,0,0
+w = TextWidth("M")
+h = TextHeight("M")*2
+img = MakeImage(w,h)
+DrawToImage img
+Text 0,h/2, "M"
+DrawToScreen
+PickImageColor img, 2,h/2+2
+If getRGB(RED)>0 Then YSwap=1 Else YSwap=-1
+Color oldR,oldG,oldB
+DeleteImage img
+
+
+//FormElements.cb
+    Dim checked_radio(100)
+    Dim disabled_radio(100)
+    
+    Global CmdButtonDown
+    Function CmdButton(txt$,x,y,w=0,h=0) 'by alodnal
+        CmdButtonDown=False
+        If w = 0 Then w = TextWidth(txt$)
+        If h = 0 Then h = TextHeight(txt$)
+        old_r = getRGB(RED)
+        old_g = getRGB(GREEN)
+        old_b = getRGB(BLUE)
+        If MouseX() >= x And MouseX() <= x+w And MouseY() >= y And MouseY() <= y+h Then
+            Color cbblackskin
+            Line x-1,y-1,x+w,y-1
+            Line x-1,y,x-1,y+h
+            Color 175,150,70
+            Line x,y+h,x+w,y+h
+            Line x+w,y,x+w,y+h-1
+            Color 140,125,30
+            Line x+w+1,y-1,x+w+1,y+h
+            Line x-1,y+h+1,x+w+1,y+h+1
+            Color cbgold'212,208,200
+            Box x,y,w,h
+            Color 0,0,0
+            Text x+(w/2)-(TextWidth(txt)/2)-1,y+(h/2)-(TextHeight(txt)/2),txt
+            is_clicked = False
+            If MouseDown(1) Then
+                CmdButtonDown=True
+                Color cbblackskin
+                Box x,y,w+1,h+1
+                Color 175,150,70
+                Line x-1,y-1,x+w,y-1
+                Line x-1,y,x-1,y+h	
+                Color 140,125,30
+                Line x,y,x+w-1,y
+                Line x,y+1,x,y+h-1
+                Color cbblackskin
+                Line x+w+1,y-1,x+w+1,y+h
+                Line x-1,y+h+1,x+w+1,y+h+1
+                Color 0,0,0
+                Text x+(w/2)-(TextWidth(txt)/2),y+(h/2)-(TextHeight(txt)/2)+1,txt
+                is_clicked = False
+            ElseIf MouseUp(1) Then
+                is_clicked = True
+            EndIf
+        Else
+            Color cbblackskin
+            Line x-1,y-1,x+w,y-1
+            Line x-1,y,x-1,y+h
+            Color 175,150,70
+            Line x,y+h,x+w,y+h
+            Line x+w,y,x+w,y+h-1
+            Color 140,125,30
+            Line x+w+1,y-1,x+w+1,y+h
+            Line x-1,y+h+1,x+w+1,y+h+1
+            Color cbgold
+            Box x,y,w,h
+            Color 0,0,0
+            Text x+(w/2)-(TextWidth(txt)/2)-1,y+(h/2)-(TextHeight(txt)/2),txt
+            is_clicked = False
+        EndIf
+        Color old_r,old_g,old_b
+        Return is_clicked
+    End Function
+    
+    Function Inputfield(key,x,y,w,h,returns$,passchar$="") 'by alodnal
+        old_r = getRGB(RED)
+        old_g = getRGB(GREEN)
+        old_b = getRGB(BLUE)
+        If w < TextWidth("A") Then w = TextWidth("A")
+        If h < TextHeight("A") Then h = TextHeight("A")
+        If Len(returns) < 3 Then
+            is_activated$ = "0"
+            keytime$ = "00"
+            blink$ = "00"
+            stri$ = ""
+        Else
+            is_activated$ = Left(returns,1)
+            keytime$ = Mid(returns,2,2)
+            blink$ = Mid(returns,4,2)
+            stri$ = Mid(returns,6,Len(returns)-5)	
+        EndIf
+        If MouseX() >= x And MouseX() <= x+w And MouseY() >= y And MouseY() <= y+h Then
+            If MouseHit(1) Then is_activated = "1": blink = "0"	
+        Else
+            If MouseHit(1) Then is_activated = "0"	
+        EndIf
+        If is_activated = "1" Then
+            blink = Int(blink) + 1
+            For a = 32 To 126
+                If key = a Or key = 145 Then
+                    stri = StrInsert(stri,Len(stri)+1,Chr(key))
+                    blink = "0"	
+                EndIf	
+            Next a
+            For b = 160 To 255
+                If key = 146 Or key = b Then	
+                    stri = StrInsert(stri,Len(stri)+1,Chr(key))
+                    blink = "0"	
+                EndIf	
+            Next b	
+            If Len(stri) > 0 Then
+                If KeyHit(14) Then	
+                    stri = StrRemove(stri,Len(stri),1)
+                    blink = "0"		
+                ElseIf KeyDown(14) Then	
+                    If Int(keytime) < 20 Then keytime = Int(keytime) + 1
+                    If Int(keytime) >= 20 Then stri = StrRemove(stri,Len(stri),1)
+                    blink = "0"
+                Else
+                    keytime = "00"			
+                EndIf		
+            EndIf	
+        EndIf
+        Color 140,125,30
+        Line x-1,y-1,x+w-1,y-1
+        Line x-1,y,x-1,y+h-1
+        Color cbblackskin
+        Line x-1,y+h,x+w,y+h
+        Line x+w,y-1,x+w,y+h-1
+        Color 175,150,70
+        Line x-2,y-2,x+w,y-2
+        Line x-2,y-1,x-2,y+h
+        Color cbgold
+        Line x-2,y+h+1,x+w+1,y+h+1
+        Line x+w+1,y-2,x+w+1,y+h
+        Box x,y,w,h
+        Color 0,0,0
+        'letter_amount = RoundDown(w / TextWidth("A")) - 1
+        letter_amount = RoundDown(w / 8) - 1
+        If passchar$ = "" Then
+            Text x+1,y+(h/2)-(TextHeight("A")/2),Right(stri,letter_amount)
+        Else
+            char_amount = Min( Len(stri), letter_amount )
+            Text x+1,y+(h/2)-(TextHeight("A")/2),String(passchar$,char_amount)
+        EndIf
+        If is_activated = "1" Then
+            If Int(blink) < 21 Then
+                Line x+TextWidth(Right(stri,letter_amount))+2,y+(h/2)-(TextHeight(stri)/2),x+TextWidth(Right(stri,letter_amount))+2,y+(h/2)+(TextHeight(stri)/2)		
+            ElseIf Int(blink) > 39 Then	
+                blink = "0"		
+            EndIf	
+        EndIf
+        If Len(keytime) < 2 Then keytime = "0" + keytime
+        If Len(blink) < 2 Then blink = "0" + blink	
+        Return is_activated + keytime + blink + stri
+        Color old_r,old_g,old_b
+    End Function
+    
+    Function GetText(returns$)
+        Return Mid(returns,6,Len(returns)-5)
+    End Function
+    
+    Function SetText(txt$)
+        Return "00000" + txt$
+    End Function
+    
+    
+    Function Checkbox(txt$,x,y,checked) 'by alodnal
+        old_r = getRGB(RED)
+        old_g = getRGB(GREEN)
+        old_b = getRGB(BLUE)
+        is_checked = checked
+        Color 140,125,30'64,64,64
+        Line x-1,y-1,x+8,y-1
+        Line x-1,y,x-1,y+8
+        Color cbblackskin'212,208,200
+        Line x-1,y+9,x+9,y+9
+        Line x+9,y-1,x+9,y+8
+        Color 140,125,30'128,128,128
+        Line x-2,y-2,x+9,y-2
+        Line x-2,y-1,x-2,y+9
+        Color 175,150,70'255,255,255
+        Line x-2,y+10,x+10,y+10
+        Line x+10,y-2,x+10,y+9
+        If MouseX() >= x and MouseX() <= x+9+TextWidth(txt+" ") And MouseY() >= y And MouseY() <= y+9 And MouseDown(1) Then
+            Color cbblackskin
+            Box x,y,9,9
+        ElseIf MouseX() >= x And MouseX() <= x+9+TextWidth(txt+" ") And MouseY() >= y And MouseY() <= y+9 And MouseUp(1) Then
+            Color 175,150,70
+            Box x,y,9,9
+            If is_checked Then
+                is_checked = False
+            Else
+                is_checked = True
+            EndIf
+        Else
+            Color 175,150,70
+            Box x,y,9,9
+        EndIf
+        Color 0,0,0
+        Text x+11+5,y+(9/2)-(TextHeight(txt)/2),txt
+        If is_checked Then
+            Line x+1,y+5,x+3,y+7
+            Line x+1,y+4,x+3,y+6
+            Line x+1,y+3,x+3,y+5
+            Line x+4,y+4,x+7,y+1
+            Line x+4,y+5,x+7,y+2
+            Line x+4,y+6,x+7,y+3
+        EndIf
+        Color old_r,old_g,old_b
+        Return is_checked
+    End Function
+    
+    
+    Function Radiobutton(stri$,x,y,group,id) 'by cb Programmer
+        // Onko tämä nappi valittu
+        If checked_radio(group)=id Then is_checked = True
+        // Onko nappi disabled, jos ei niin:
+        If disabled_radio(group)=False Then
+            If MouseX() >= x and MouseX() <= x+13+TextWidth(stri) And MouseY() >= y And MouseY() <= y+13 And MouseDown(1) Then
+                Color cbblackskin
+                Circle x,y,12,0
+                Color 0,0,0
+                Circle x+1,y+1,10,0
+                Color cbgold
+                Line x+10,y+2,x+10,y+3
+                Line x+11,y+4,x+11,y+7
+                Line x+10,y+8,x+10,y+9
+                Line x+8,y+10,x+9,y+10
+                Line x+4,y+11,x+7,y+11
+                Line x+2,y+10,x+3,y+10
+                Color 212,208,200
+                Circle x+2,y+2,8,1
+                Color cbblackskin
+                Line x+10,y+4,x+10,y+7
+                Line x+9,y+8,x+9,y+9
+                Line x+8,y+9,x+9,y+9
+                Line x+4,y+10,x+7,y+10
+                Line x+2,y+9,x+3,y+9
+                Line x+2,y+8,x+2,y+9
+            ElseIf MouseX() >= x And MouseX() <= x+13+TextWidth(stri) And MouseY() >= y And MouseY() <= y+13 And MouseUp(1) Then
+                Color cbblackskin
+                Circle x,y,12,0
+                Color 0,0,0
+                Circle x+1,y+1,10,0
+                Color cbgold
+                Line x+10,y+2,x+10,y+3
+                Line x+11,y+4,x+11,y+7
+                Line x+10,y+8,x+10,y+9
+                Line x+8,y+10,x+9,y+10
+                Line x+4,y+11,x+7,y+11
+                Line x+2,y+10,x+3,y+10
+                Circle x+2,y+2,8,1
+                Color cbblackskin
+                Line x+10,y+4,x+10,y+7
+                Line x+9,y+8,x+9,y+9
+                Line x+8,y+9,x+9,y+9
+                Line x+4,y+10,x+7,y+10
+                Line x+2,y+9,x+3,y+9
+                Line x+2,y+8,x+2,y+9
+                If is_checked = False Then
+                    is_checked = True
+                    checked_radio(group)=id
+                Else
+                    is_checked = False
+                EndIf
+            Else
+                Color cbblackskin
+                Circle x,y,12,0
+                Color 0,0,0
+                Circle x+1,y+1,10,0
+                Color cbgold
+                Line x+10,y+2,x+10,y+3
+                Line x+11,y+4,x+11,y+7
+                Line x+10,y+8,x+10,y+9
+                Line x+8,y+10,x+9,y+10
+                Line x+4,y+11,x+7,y+11
+                Line x+2,y+10,x+3,y+10
+                Circle x+2,y+2,8,1
+                Color cbblackskin
+                Line x+10,y+4,x+10,y+7
+                Line x+9,y+8,x+9,y+9
+                Line x+8,y+9,x+9,y+9
+                Line x+4,y+10,x+7,y+10
+                Line x+2,y+9,x+3,y+9
+                Line x+2,y+8,x+2,y+9
+            EndIf
+            
+            Color 0,0,0
+            Text x+13,y,stri$
+            
+            If is_checked = True Then
+                Color 0,0,0
+                Circle x+4,y+4,4,1
+                Return True
+            Else
+                Return False
+            EndIf
+        // Jos disabled = true
+        Else
+            Color 73,73,56
+            Circle x,y,12,0
+            Color 19,07,9
+            Circle x+1,y+1,10,0
+            Color 155,155,155
+            Line x+10,y+2,x+10,y+3
+            Line x+11,y+4,x+11,y+7
+            Color 131,155,155
+            Line x+10,y+8,x+10,y+9
+            Line x+8,y+10,x+9,y+10
+            Line x+4,y+11,x+7,y+11
+            Line x+2,y+10,x+3,y+10
+            Color 139,139,122
+            Circle x+2,y+2,8,1
+            Color 122,122,122
+            Line x+10,y+4,x+10,y+7
+            Line x+9,y+8,x+9,y+9
+            Line x+8,y+9,x+9,y+9
+            Line x+4,y+10,x+7,y+10
+            Line x+2,y+9,x+3,y+9
+            Line x+2,y+8,x+2,y+9
+            Color 73,73,56
+            Text x+13,y,stri$
+        EndIf
+    End Function
+    
+    Function DisableRadioGroup(group, state=1)
+        disabled_radio(group) = state
+    End Function
+    
+    Function CheckRadioButton(group,id)
+        checked_radio(group) = id
+    End Function
+    
+    Const ListsNoMax = 100 'Korkeintaan N listaa
+    Const ListItemsNoMax = 1000 'Korkeintaan N valintaa per lista
+    Dim ListItems(ListsNoMax,ListItemsNoMax) As String
+    Dim ListItemsNo(ListsNoMax)
+    Dim ListSelection(ListsNoMax)
+    Dim ListScroll(ListsNoMax)
+    Dim ListActive(ListsNoMax) As Byte
+    Dim ListSelectChanged(ListsNoMax) As Byte
+    
+    Function List(id, x,y, w,h, Scrollbar=1, keySelection=1)
+        old_r = getRGB(RED)
+        old_g = getRGB(GREEN)
+        old_b = getRGB(BLUE)
+        If w < TextWidth("A") Then w = TextWidth("A")
+        If h < TextHeight("A") Then h = TextHeight("A")
+        
+        Color 140,125,30
+        Line x-1,y-1,x+w-1,y-1
+        Line x-1,y,x-1,y+h-1
+        Color cbblackskin
+        Line x-1,y+h,x+w,y+h
+        Line x+w,y-1,x+w,y+h-1
+        Color 175,150,70
+        Line x-2,y-2,x+w,y-2
+        Line x-2,y-1,x-2,y+h
+        Color cbgold
+        Line x-2,y+h+1,x+w+1,y+h+1
+        Line x+w+1,y-2,x+w+1,y+h
+        Box x,y,w,h
+        
+        If MouseDown(1) Then
+            If MouseX()=>x And MouseX()<=x+w And MouseY()=>y And MouseY()<=y+h Then
+                If ListActive(id)=False And keySelection Then a=mousemovez() 'pyyhkii hiiren rullan tiedot pois, jottei aktivointi saa listaa rullaamaan hassusti mousemovez
+                ListActive(id)=True
+                If MouseHit(1) Then
+                    If Scrollbar=False Or MouseX()<x+w-15 Then
+                        item = (MouseY()-y)/TextHeight("A")+ListScroll(id)
+                        SelectListItem(id,item)
+                        ListSelectChanged(id)=True
+                    End If
+                End If
+            Else
+                ListActive(id)=False
+            End If
+        End If
+        
+        If keySelection And ListActive(id) Then
+            If KeyHit(cbkeyup) Then ListSelection(id)=Max(ListSelection(id)-1,1):ListSelectChanged(id)=True
+            If KeyHit(cbkeydown) Then ListSelection(id)=Min(ListSelection(id)+1,ListItemsNo(id)):ListSelectChanged(id)=True
+            ListScroll(id)=ListScroll(id)-MouseMoveZ()
+            ListScroll(id) = Max(Min(ListScroll(id),ListItemsNo(id)-h/TextHeight("A")+1),1)
+        End If
+        
+        ListSelection(id) = Min(Max(ListSelection(id),0),ListItemsNo(id))
+        
+        If ListSelection(id)=>ListScroll(id) And ListSelection(id)<ListScroll(id)+h/TextHeight("A") Then
+            Color cbblackskin
+            yy = y+ (ListSelection(id)-ListScroll(id))*TextHeight("A")
+            Box x+1,yy, w-2, TextHeight("A")
+        End If
+            
+        If ListItemsNo(id)>h/TextHeight("A") And Scrollbar Then
+            If ListActive(id) And MouseDown(1) And MouseX()=>x+w-15 Then
+                Pros# = ((MouseY()-y)*1.0)/h
+                ListScroll(id) = Pros *(ListItemsNo(id)-h/TextHeight("A"))+1
+                ListScroll(id) = Max(Min(ListScroll(id),ListItemsNo(id)-h/TextHeight("A")+1),1)
+            End If
+        
+            Color 175,150,70
+            Box x+w-15,y,15,h, OFF
+            Color cbblackskin
+            Box x+w-14,y+1,13,h-2,OFF
+            Box x+w-13,y+2,11,h-4
+            
+            Color cbdark
+            Pros# = (ListScroll(id)-1.0)/(ListItemsNo(id)-h/TextHeight("A"))
+            yy = y + (h-15)*Pros
+            Box x+w-15,yy,15,TextHeight("A")
+        End If
+        
+        ListScroll(id)=Max(Min(ListScroll(id),ListItemsNo(id)-h/TextHeight("A")+1),1)
+    
+        Color 0,0,0
+        MinItem=max(ListScroll(id),1)
+        MaxItem=min(ListScroll(id)+h/TextHeight("A")-1,ListItemsNo(id))
+        For i = MinItem To MaxItem
+            yy=y+TextHeight("A")*(i-ListScroll(id))
+            Text x+2,yy, ListItems(id,i)
+        Next i
+        
+        Color old_r,old_g,old_b
+    End Function
+    
+    Function SelectListItem(id,item)
+        ListSelection(id)=item
+    End Function
+    
+    Function SelectListItemString(id,item$)
+        For i = 1 To ListItemsNo(id)
+            If ListItems(id,i)=item Then
+                ListSelection(id)=i
+                Return True
+            End If
+        Next i
+        Return False
+    End Function
+    
+    Function AddListItem(id, item$, selection=0)
+        If ListItemsNo(id)=ListItemsNoMax Then Return False
+        ListItemsNo(id)=ListItemsNo(id)+1
+        ListItems(id,ListItemsNo(id))=item
+        If selection Then
+            ListSelection(id)=ListItemsNo(id) : ListSelectChanged(id)=True
+            ListScroll(id) = Max(ListScroll(id),ListSelection(id))
+        End If
+        Return ListItemsNo(id)
+    End Function
+    
+    Function DeleteListItem(id, item)
+        If item=0 Then Return False
+        For i = item To ListItemsNo(id)
+            If i<ListItemsNo(id) Then ListItems(id,i)=ListItems(id,i+1) Else ListItems(id,i)=""
+        Next i
+        ListItemsNo(id) = ListItemsNo(id)-1
+    End Function
+    
+    Function DeleteListItemString(id, itemString$)
+        For i = 1 To ListItemsNo(id)
+            If ListItems(id,i)=itemString Then
+                item=i
+                Exit
+            End If
+        Next i
+        If item=0 Then Return False
+        For i = item To ListItemsNo(id)
+            If i<ListItemsNo(id) Then ListItems(id,i)=ListItems(id,i+1) Else ListItems(id,i)=""
+        Next i
+        ListItemsNo(id) = ListItemsNo(id)-1
+        Return True
+    End Function
+    
+    Function FormatList(id)
+        For i = 1 To ListItemsNo(id)
+            ListItems(id,i)=""
+        Next i
+        ListItemsNo(id)=0
+        ListSelectionChanged(id)=False
+        ListSelection(id)=0
+    End Function
+    
+    Function ChangeListItem(id,item,NewItem$)
+        ListItems(id,item) = NewItem
+    End Function
+    
+    Function ChangeListItemString(id,item$,NewItem$)
+        For i = 1 To ListItemsNo(id)
+            If ListItems(id,i)=item Then
+                ListItems(id,i) = NewItem
+                Return True
+            End If
+        Next i
+        Return False
+    End Function
+    
+    Function GetListSelection(id)
+        Return ListItems(id,ListSelection(id))
+    End Function
+    
+    Function ListSelectionChanged(id)
+        If ListSelectChanged(id) Then
+            ListSelectChanged(id)=False
+            Return True
+        Else
+            Return False
+        End If
+    End Function
+    
+    Function SortList(id,sortType=0)
+        //sortType: 0: Nouseva aakkosjärjestys; 1: Laskeva aakkosjärjestys
+        
+        For i = 1 To ListItemsNo(id)
+            iItem$ = ListItems(id,i)
+            For j = i+1 To ListItemsNo(id)
+                jItem$ = ListItems(id,j)
+                If jItem<iItem And sortType=0 Then
+                    ListItems(id,i)=jItem
+                    ListItems(id,j)=iItem
+                    iItem=jItem
+                ElseIf jItem>iItem And sortType=1 Then
+                    ListItems(id,i)=jItem
+                    ListItems(id,j)=iItem
+                    iItem=jItem
+                End If
+            Next j
+        Next i
+    End Function
+
+
+//Math.cb
+    // Tarkastaa leikkavatko kaksi janaa ja paluttaa leikauspisteen
+    
+    Global IntersX#, IntersY#
+    Function LinesIntersect(Ax#, Ay#, Bx#, By#, Cx#, Cy#, Dx#, Dy#)
+        LinesOnTop = False
+        // Tarkastetaan ovatko suorat toistensa päällä yhdensuuntaisina
+        If Collinear(Ax#,Ay#,Bx#,By#,Cx#,Cy#) = True And Collinear(Ax#,Ay#,Bx#,By#,Dx#,Dy#) = True Then 'ovatko yhdensuuntaisia
+            If Between(Ax#,Ay#,Bx#,By#,Cx#,Cy#) = True Or Between(Ax#,Ay#,Bx#,By#,Dx#,Dy#) = True Or Between(Cx#,Cy#,Dx#,Dy#,Ax#,Ay#) = True Or Between(Cx#,Cy#,Dx#,Dy#,Bx#,By#) = True Then  'ovatko sisäkkäin
+                IntersX# = 0
+                IntersY# = 0
+                LinesOnTop = True
+                Return True
+            EndIf
+        EndIf
+    
+        Rn# = (Ay#-Cy#)*(Dx#-Cx#) - (Ax#-Cx#)*(Dy#-Cy#)
+        Rd# = (Bx#-Ax#)*(Dy#-Cy#) - (By#-Ay#)*(Dx#-Cx#)
+        If Rd# = 0
+            Return False
+        Else
+            Sn# = (Ay#-Cy#)*(Bx#-Ax#) - (Ax#-Cx#)*(By#-Ay#)
+            Intersection_AB# = Rn# / Rd#
+            Intersection_CD# = Sn# / Rd#
+            If Intersection_AB# > 1 Or Intersection_CD# > 1 Or Intersection_AB# < 0 Or Intersection_CD# < 0 Then Return False
+            IntersX = Ax# + Intersection_AB#*(Bx#-Ax#)
+            IntersY = Ay# + Intersection_AB#*(By#-Ay#)
+            Return True
+        EndIf
+    End Function
+    
+    
+    
+    // Tarkastaa onko jokin piste kahden pisteen määrittämällä suoralla
+    
+    Function Collinear(x1#,y1#,x2#,y2#,x3#,y3#)
+        If x1*(y2-y3) + x2*(y3-y1) + x3*(y1-y2) = 0 Then Return True Else Return False
+    End Function
+    
+    
+    
+    // Tarkastaa onko jokin piste kahden pisteen määrittämällä janalla
+    
+    Function Between(x1#,y1#,x2#,y2#,x3#,y3#)
+        If Collinear(x1#,y1#,x2#,y2#,x3#,y3#) = False Then Return False
+        If Distance(x1,y1,x3,y3) + Distance(x3,y3,x2,y2) = Distance(x1,y1,x2,y2) Then Return True Else Return False
+    End Function
+    
+    // Paluttaa luvun, jossa on annettu määrä desimaaleja
+    Function Round#(num#,decims)
+        If decims = 0 Then Return Int(num)
+        ret# = Int(num*10^decims)
+        Return ret#/10^decims
+    End Function
+    
+
+//String.cb
+    Function RowText(st$,x,y,w,center=0,toImg=0)
+        If Not toImg Then
+            oldYSwap=YSwap
+            YSwap=1
+        End If
+        If x + TextWidth(st$) < w Then
+            If center = ON Then Text (x+w)/2-TextWidth(st$)/2,y*YSwap,st$ Else Text x,y*YSwap,st$
+        Else
+            For i = 1 To CountWords(st$)
+                word$ = GetWord(st$,i)
+                If TextWidth(sentence$) + TextWidth(word$) > w Then
+                    If center = ON Then
+                        Text x + w/2 - TextWidth(sentence$)/2, y*YSwap, sentence$
+                    Else
+                        Text x, y*YSwap, sentence$
+                    EndIf
+                    y = y + TextHeight(sentence)
+                    sentence$ = ""
+                EndIf
+                sentence$ = sentence$ + word$ + " "
+            Next i
+            If sentence$ <> "" Then
+                If center = ON Then Text x+w/2-(TextWidth(sentence$)/2),y*YSwap,sentence$ Else Text x,y*YSwap,sentence$
+            EndIf
+        EndIf
+        Return y+TextHeight("I") 'oma lisäykseni, palauttaa y-koordinaatin, johon seuraavan tekstirivin voi tulostaa.
+        If Not toImg Then YSwap = oldYSwap
+    End Function
+    
+    
+//NETWORK
+
+Const NET_DLL_FILE$  = "cbNetwork.dll"
+
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+// Muistipalojen käsittely.
+// Kirjaston sisäiseen käyttöön.
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+Global gNetMemBlock, gNetMemBlockOffset
+
+Function _Net_InitMemBlock(_size = 0)
+    If gNetMemBlock Then DeleteMEMBlock gNetMemBlock
+    gNetMemBlock = MakeMEMBlock(_size + 4)
+    PokeInt gNetMemBlock, 0, 0
+    gNetMemBlockOffset = 4
+EndFunction
+
+Function _Net_DeleteMemBlock()
+    DeleteMEMBlock gNetMemBlock
+    gNetMemBlockOffset = 0
+    gNetMemBlock = 0
+EndFunction
+
+Function _Net_CallDll(_method$)
+    lMemSize = MEMBlockSize(gNetMemBlock)
+    PokeInt gNetMemBlock, 0, lMemSize
+    CallDLL NET_DLL_FILE, _method, gNetMemBlock
+    gNetMemBlockOffset = 0
+EndFunction
+
+Function _Net_MemBlockResize(_length)
+    lMemSize = MEMBlockSize(gNetMemBlock)
+    If gNetMemBlockOffset + _length > lMemSize Then
+        ResizeMEMBlock gNetMemBlock, gNetMemBlockOffset + _length
+    EndIf
+EndFunction
+
+Function _Net_PutInt(_value)
+    _Net_MemBlockResize(4)
+    PokeInt gNetMemBlock, gNetMemBlockOffset, _value
+    gNetMemBlockOffset + 4
+EndFunction
+
+Function _Net_GetInt()
+    lRetVal = PeekInt(gNetMemBlock, gNetMemBlockOffset)
+    gNetMemBlockOffset + 4
+    Return lRetVal
+EndFunction
+
+Function _Net_PutShort(_value)
+    _Net_MemBlockResize(2)
+    PokeShort gNetMemBlock, gNetMemBlockOffset, _value
+    gNetMemBlockOffset + 2
+EndFunction
+
+Function _Net_GetShort()
+    lRetVal = PeekShort(gNetMemBlock, gNetMemBlockOffset)
+    If lRetVal > 32768 Then lRetVal = lRetVal - 65536
+    gNetMemBlockOffset + 2
+    Return lRetVal
+EndFunction
+
+Function _Net_GetUShort()
+    lRetVal = PeekShort(gNetMemBlock, gNetMemBlockOffset)
+    gNetMemBlockOffset + 2
+    Return lRetVal
+EndFunction
+
+Function _Net_PutFloat(_value#)
+    _Net_MemBlockResize(4)
+    PokeFloat gNetMemBlock, gNetMemBlockOffset, _value
+    gNetMemBlockOffset + 4
+EndFunction
+
+Function _Net_GetFloat#()
+    lRetVal# = PeekFloat(gNetMemBlock, gNetMemBlockOffset)
+    gNetMemBlockOffset + 4
+    Return lRetVal
+EndFunction
+
+Function _Net_PutByte(_value)
+    _Net_MemBlockResize(1)
+    PokeByte gNetMemBlock, gNetMemBlockOffset, _value
+    gNetMemBlockOffset + 1
+EndFunction
+
+Function _Net_GetByte()
+    lRetVal = PeekByte(gNetMemBlock, gNetMemBlockOffset)
+    gNetMemBlockOffset + 1
+    Return lRetVal
+EndFunction
+
+Function _Net_PutString(_value$)
+    lStrLen = Len(_value)
+    _Net_MemBlockResize(lStrLen + 4)
+    PokeInt gNetMemBlock, gNetMemBlockOffset, lStrLen
+    gNetMemBlockOffset + 4
+    For i = 1 To lStrLen
+        PokeByte gNetMemBlock, gNetMemBlockOffset, Asc(Mid(_value, i, 1))
+        gNetMemBlockOffset + 1
+    Next i
+EndFunction
+
+Function _Net_GetString$()
+    lStrLen = _Net_GetInt()
+    lRetVal$ = ""
+    For i = 1 To lStrLen
+        c = _Net_GetByte()
+        If c > 0 Then lRetVal = lRetVal + Chr(c)
+    Next i
+    Return lRetVal
+EndFunction
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+// Muistipalojen käsittely.
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+//==============================================================================
+// API_DLL_Version
+//==============================================================================
+remstart
+Global gNetDllVersion#
+gNetDllVersion = Net_DLL_Version()
+If gNetDllVersion = 0 Then
+    MakeError "File cbNetwork.dll not be found!"
+EndIf
+If gNetDllVersion <> 1.0 Then
+    MakeError "Incorrect library version (cbNetwork.dll)!"
+EndIf
+
+Function Net_DLL_Version#()
+    _Net_InitMemBlock(4)
+    _Net_PutFloat(0)
+    _Net_CallDll("_Version")
+    lRetVal# = _Net_GetFloat()
+    _Net_DeleteMemBlock()
+    Return lRetVal
+EndFunction
+remend
+//------------------------------------------------------------------------------
+// API_DLL_Version
+//------------------------------------------------------------------------------
+
+Global HTTP_ContentType$, HTTP_ContentLength
+Global Net_ClientId$
+
+remstart
+Function InitServer(_port, _timeout = 5000)
+    _Net_InitMemBlock()
+    _Net_putInt(_port)
+    _Net_putInt(_timeout)
+    _Net_CallDll("_InitServer")
+    lRetVal = _Net_GetInt()
+    _Net_DeleteMemBlock()
+    Return lRetVal
+EndFunction
+
+Function CloseServer()
+    _Net_InitMemBlock(4)
+    _Net_CallDll("_CloseServer")
+    lRetVal = _Net_GetInt()
+    _Net_DeleteMemBlock()
+    Return lRetVal
+EndFunction
+
+Function InitClient(_host$, _port, _timeout = 5000)
+    _Net_InitMemBlock()
+    _Net_putString(_host)
+    _Net_putInt(_port)
+    _Net_PutInt(_timeout)
+    _Net_CallDll("_InitClient")
+    lRetVal = _Net_GetInt()
+    _Net_DeleteMemBlock()
+    Return lRetVal
+EndFunction
+
+Function ClientSend()
+    _Net_CallDll("_ClientSend")
+    Return _Net_GetInt()
+EndFunction
+
+Function ClientSendBack()
+    _Net_CallDll("_ClientSendBack")
+    Return _Net_GetInt()
+EndFunction
+
+Function ClientState()
+    _Net_InitMemBlock(4)
+    _Net_CallDll("_ClientState")
+    Return _Net_GetInt()
+EndFunction
+
+Function ClientRead()
+    _Net_InitMemBlock(4096)
+    _Net_CallDll("_ClientRead")
+    Return _Net_GetInt()
+EndFunction
+
+Function GetNetErrorString$(_msg)
+    _Net_InitMemBlock(260)
+    _Net_putInt(_msg)
+    _Net_CallDll("_GetErrorString")
+    sRetVal$ = _Net_GetString()
+    _Net_DeleteMemBlock()
+    Return sRetVal
+EndFunction
+
+Function ServerSend()
+    _Net_CallDll("_ServerSend")
+    Return _Net_GetInt()
+EndFunction
+
+Function ServerRead()
+    _Net_InitMemBlock(4096)
+    _Net_CallDll("_ServerRead")
+    nRetVal = _Net_GetInt()
+    Net_ClientId = _Net_GetString() + ":" + _Net_GetInt()
+    return nRetVal
+EndFunction
+remend
+
+Function HTTPGet(_url$, _background = 0)
+    _Net_InitMemBlock()
+    _Net_PutString(_url)
+    _Net_PutByte(_background)
+    _Net_CallDll("_HTTPGet")
+    nRetVal = _Net_GetInt()
+    HTTP_ContentLength = _Net_GetInt()
+    HTTP_ContentType = _Net_GetString()
+    
+    _Net_DeleteMemBlock()
+    Return nRetVal
+EndFunction
+
+Function HTTPDownloadState()
+    _Net_InitMemBlock()
+    _Net_CallDll("_HTTPDownloadState")
+    nRetVal = _Net_GetInt()
+    _Net_DeleteMemBlock()
+    Return nRetVal
+EndFunction
+
+Function HTTPSaveContent(_file$)
+    _Net_InitMemBlock()
+    _Net_putString(_file)
+    _Net_CallDll("_HTTPSaveContent")
+    _Net_DeleteMemBlock()
+EndFunction
+
+Function HTTPLoadContent()
+    _Net_InitMemBlock(HTTP_ContentLength)
+    _Net_CallDll("_HTTPLoadContent")
+EndFunction
+
+Function HTTPLoadContentImage()
+    _Net_InitMemBlock(256)
+    _Net_putInt(0)
+    _Net_CallDll("_HTTPLoadContentImage")
+    nWidth = _Net_GetInt()
+    nHeight = _Net_GetInt()
+    _Net_DeleteMemBlock()
+    _Net_InitMemBlock((nWidth * nHeight) * 4)
+    _Net_putInt(1)
+    _Net_CallDll("_HTTPLoadContentImage")
+    iRetImage = MakeImage(nWidth, nHeight)
+    Lock Image(iRetImage)
+    For nY = 0 To nHeight - 1
+        For nX = 0 To nWidth - 1
+            PutPixel2 nX, nY, _Net_GetInt(), Image(iRetImage)
+        Next nX
+    Next nY
+    Unlock Image(iRetImage)
+    _Net_DeleteMemBlock()
+    Return iRetImage
+EndFunction
+

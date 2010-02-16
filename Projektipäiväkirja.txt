@@ -1,5 +1,5 @@
-SunBEAM - Projektipäiväkirja 4.10.2006 - ?.?.200?
--------------------------------------------------
+SunBEAM - Projektipäiväkirja 4.10.2006 - 21.11.2006 - 20.12.2006 - xx.xx.2007
+-----------------------------------------------------------------------------
 
 Tämä on SunBEAM-pelin tekemisen aikana kirjoittamani projektipäiväkirja. Kirjoittelen tässä niitä näitä pelin tekemiseen liittyen: mikä on mennyt hyvin, mikä huonosti, mitä olen oppinut, millainen peli on milloinkin ollut sekä joitakin pikkutarkkoja teknisiä tietojakin jne. Oletan, että lukija on pelannut peliä tai vähintäänkin tietää, mitä pelissä tehdään, sillä en nyt ala pelin ideaa tässä kertaamaan kun se löytyy tuolta ohjetiedostostakin.
 
@@ -72,3 +72,398 @@ Keksin keinon nopeuttaa valonsädemoottoria. Nykyinen systeemi liikuttaa sädettä 
 Olen myös huomannut, että itse kenttäeditorikin on hidastunut uusien ominaisuuksien myötä. Siinäkin käydään kokoajan elementtejä läpi jotta nähdään esimerkiksi, minne peilejä voi luoda ja siirtää, mitä elementtejä voi poistaa jne. Tulen ottamaan editorimoottorin tutkittavaksi ja pyrin vähentämään sen aiheuttamaa kuormaa. Editori ja valonsädemoottori eivät varsinaisesti vaikuta toisiinsa nopeudessa mitenkään.
 
 Saman tien voisin myös kommentoida koodin kunnolla. Nykyisellään kommentteja on erittäin harvassa ja esimerkiksi muuttujamäärittelyt ovat hujan hajan pelin lähdekoodin alkupäässä. Alkupäähän ne tulevat jäämäänkin, mutta kunnolla ryhmiteltyinä ja kommentoituina.
+
+---
+
+Se olikin kinkkisempi homma. Rukkasin valonsädemoottoria ja sainkin pähkäillä sen kanssa - en kelloa huomannut ollenkaan katsoa - mutta varmaan pari tuntia ainakin. Huh. Nyt se on tehty. Ihan en kuitenkaan voinut pitäytyä alkuperäisissä suunnitelmissani. Alunperin oli ajatellut piirtää siihen aiemmin mainitsemaani kuvaan (eli "karttaan") yksinkertaisen, mutta tunnistettavissa olevan kopion kentän elementeistä. Ongelmia syntyi kuitenkin pikselinlukemisen kanssa, kun lukija ei millään meinannut olla niin tarkka, että osuisi esimerkiksi peilistä ilmoittavan pikselin kohdalle. Koetin tehdä kartasta epätarkemman, eli pienensin sen koon puoleen, jolloin periaatteessa neljän pikselin alue kentällä voidaan laskea yhdeksi pikseliksi kartalla ja päin vastoin. Vertaa siis näytön resoluution muuttamiseen. Tämä ei auttanut. Lisäksi koitin murskata x- ja y-koordinaatteja yhä pienemmiksi ja tarkemmiksi ja tällä tavalla oikein tahallani hidastaa moottoria kunnolla. Nyt alkoi jo pikselinluku toimia. Mutta homma kusi edelleen. Moottori oli edelleen raskas. Minulla oli pari säätöä, joista säätää moottorin tarkkuutta, mutta liika nopeutus aiheutti tietysti pikselinlukijalle harmaita hiuksia, eikä se enää huomannut kaikkia peilejä. Jos moottoria olisi tässä asussaan käyttänyt, sitä olisi pitänyt pitää niin tarkoissa säädöissä, että se ei voittaisi vanhaa moottoria. Eli ei kelvannut minulle.
+
+Lopulta keksin ratkaista ongelman piirtämällä karttaan tarkkojen peilien sijasta peilien päätepisteiden väliset alueet. Eli siis yhdestä peilistä tulee iso laatikko. Isoon laatikkoon pikselinlukija törmää varmasti. Laatikoilla on minimikokonsa, joten sellainen bugi ei ole mahdollinen, että karttaan tulisi niin pieni peiliä (tai estettä) kuvaava laatikko, ettei pikselinlukija sitä huomaisi. Tämä oli helppo muutos tehdä, sillä juuri aiemmin tekemäni muutokset moottoriin olivat niin lähellä tätä, ettei kovin montaa koodiriviä tarvinnut muuttaa tai lisätä. Tämä käänne on nopea ja toimii. Enää ei ole yhtäkään säätöä, josta valonsädemoottorin tarkkuutta voi säätää - näin ollen siitä ei mitään asetusta ole tulossakaan.
+
+Sen lisäksi että fiksattu valonsädemoottori tuntui ulkomuistista nopeammalta kuin vanha, oli minun myös testattava ero. Otin nimittäin pelistä varmuuskopion ennen kuin aloin muokata valonsädemoottoria. Se kannattaa aina kun on lähdössä tekemään isompaa muutosta, jonka onnistumisesta ei ole varmuutta. Näin pääsin kokeilemaan yhtä kenttää sekä uudella että vanhalla moottorilla. Ainakin tämän kentän kohdalla ja yhdellä testauksella uusi moottori paljastui noin kaksi ja puoli kertaa yhtä nopeaksi kuin vanha. Ei paha, ei paha. Plussaa vielä siitä, että en ole vielä rutistanut moottorista aivan kaikkea irti, mikä lähtee. Pieniä nopeutuksia luultavasti tulee vielä. :D
+
+Ai niin, sinua saattaa kiinnostaa. Uuden ja vanhan moottorin välillä on tottakai enemmän tai vähemmän suuri tekniikkaero. Tämä saattaisi vaikuttaa valonsäteen kulkurataan (missäkohtaa huomataan tarkka peiliin/esteeseen törmääminen ja miten valon taittumiskulma lasketaan). Näin ollen voisi käydä niinkin, että uusi moottori saa valon kulkemaan eri pituisen matkan kuin vanha moottori, vaikka kenttä olisi sama. Tämä tottakai vaikuttaisi kentän suoritusaikaan. Testissäni valo kuitenkin kulki molemmilla moottoreilla täsmälleen saman matkan, sillä tarkimmat laskutoimitukset tekevä koodi on molemmissa moottoreissa sama. Uudessa moottorissa tätä koodiosuutta vain joudutaan suorittamaan selkeästi vähemmän kuin vanhassa.
+
+Mutta nyt iltapalalle ja sitten tiedottomaan tilaan - kello on 00:25 niin kuin eilenkin lopetellessani tämän päiväkirjan kirjoittamista. :D
+
+---
+
+18.10.2006
+
+Juu ei. Olen tässä pitänyt muutaman päivän verran taukoa pelin tekemisestä. Sen verran tiedän kuitenkin, että tuo uusi valonsädemoottori ei ole vielä aukoton. Nopeutta on, mutta siinä on sama bugi kuin mitä oli valonsädemoottorin ensimmäisessä versiossa (josta siis jo mainitsin tässä päiväkirjassa). Eli valonsäde menee peilistä läpi, jos ihan sen takana on toinen peili. En nyt ihan tarkkaan tiedä, mistä tämä virhe johtuu, sillä en moottoria muuttaessani palauttanut sitä millään lailla aiempaan asuunsa. Eli siis sama systeemi, joka korjasi bugin viimeksi, löytyy edelleen moottorista (vaikkei sen tarkkuutta enää saakkaan säätää). Pitää keksiä tuohon ratkaisu. Jos ei muu auta, niin piirrän moottorin algoritmin paperille selvittäen joka ikisen koukun siitä, muutan sen pseudo-koodiksi ja sen siltä pohjalta koodaan ihan CoolBasic-kielellä vanhan moottorin päälle.
+
+Ihan toimettomana en kuitenkaan tämän tauon aikana ollut. Kävin koulua, vaikkei se mitään uutta olekkaan. Koodasin myös loppuun pelissä tarvitsemani käyttöliittymäelementin, listan. Sitä käytän ainakin kenttien avaamisessa ja tallentamisessa. Lähetin elementin myös CoolBasic Software Development Kit:iin kaikkien käytettäväksi (Windows-tyylinen käyttöliittymä / cbFormElements.cb). Elementtissä on tosin vielä pieniä paranteluja tekemättä, kuten ruma vierityspalkki. Ehkä muutan sitä ennen tämän pelin valmistumista tai sitten en.
+
+---
+
+Kokeilin tarkentaa valonsädemoottoria ihan pikkuriikkisen, ja sain sen ainakin yhden testin mukaan korjattua. Se tosin hidastui hieman ollen nyt noin kaksikertaa yhtä nopea kuin vanha moottori. Valosäteen matkaa laskevaan mittariin oli päässyt pieni virhe, jonka korjaamisen seurauksena tulos hieman muuttui. Nyt matkasi näytetään vähän aikaisempaa lyhyemmät matkat. Pitää vielä tarkistaa jossain vaiheessa, että tuo pitää kunnolla paikkansa.
+
+Koska moottori hieman hidastui, päätin optimoida sitä lisää rukkaamalla kohde-elementit samaan karttaan, missä pelit ja esteetkin ovat. Nyt ongelmana on se, että moottori ei huomaa kaikkia kohteita. Osan huomaa kyllä, mutta ei kaikkia. Pitää katsella.
+
+Näillä näkyvin näyttää siltä, että tulen koodaamaan valonsädemoottorin jossakin vaiheessa alusta loppuun uusiksi. Sitä ennen teen jonkun pikkutarkan suunnitelman siitä - aivan kuten äsken jo mainitsin.
+
+Ja nyt nukkumaan, sillä kello on 00:03 jälleen torstain puolella.
+
+---
+
+26.10.2006
+
+Optimointi tuo joskus lisää nopeutta, ja joskus myös lisää bugeja. Sano minun sanoneen. Edellinen kohde-elementtien siirtäminen tuohon karttaan ei sujunut ongelmitta. Peli jätti nimittäin tunnistamatta osan kohteista, jolloin valonsäde meni niistä läpi valaisematta niitä. Olin jo aikaisemmin tietoinen tästä, mutta nyt löysin siihen syyn. Laitoin kohteet piirtymään karttaan ennen peilejä, jotta peli ei hautautuisi kohteen alle, jos nämä ovat päällekkäin. Mutta johtuen peilien nykyisestä merkitsemistavasta karttaan, peili peittikin välillä kohteen lähes kokonaan, jolloin valonsäde kulki peitetyn peilin yli. Ratkaisin pulman tekemällä kohteille kokonaan oman karttakuvan, jolloin mikään ei voi mennä niiden kanssa päällekkäin. Ja nyt se sitten toimii. Nopeudesta sen verran, että se on hieman laskenut näiden bugikorjausten myötä. Siinä missä se "parhaiten" optimoitu moottori oli melkein 2.5 kertaa yhtä nopea kuin vanha moottori, niin nykyinen, täysin toimiva versio, on noin kaksi kertaa yhtä nopea kuin vanha moottori. Varsin hyvä tulos siis edelleen, mutta toivoisin kuitenkin vielä lisää vauhtia.
+
+Lisää vauhtia saan kunhan kehitän keinon piirtää peilit karttaansa tarkemmin. Eli niin, että ne vievät vähemmän tilaa ja vaativat sen vuoksi vähemmän läpikäyntejä ja resursseja. Varsin yksinkertainen homma, jota voisinkin heti seuraavaksi kettaa.
+
+---
+
+Puhuinko minä tässä jotakin optimoinnista? Voi helkkari. Sinä, joka tätä peliä pelaat, pelaat peliä, jonka yhdestä moottorista on tehty kahdeksan kertaa alkuperäistä nopeampi. Näin ainakin yhdessä testaamassani kentässä. Eikä valonsäteen kulkema matka poikkea paljoakaan. Se hienoinen poikkeama tämän matkan suhteen, mikä näiden moottoreiden välillä on, johtuu siitä, että ole jossakin vaiheessa korjannut valonsäteen matkan mittaamista koska siinä oli ennen pieni virhe. Mutta siis. Sain nyt jälleen rutistettua valonsädemoottoria tehokkaammaksi. Lisäksi se ei parin pikaisen testin perusteella (joista toinen suunniteltu varta vasten bugien selvittämiseksi) bugaa ollenkaan. Eli valonsäde ei läpäise peilejä tai esteitä. Eikä myöskään kohteita valaisematta niitä.
+
+Sinä lukija olet varmaan jo kurkkuasi myöten täynnä tätä hössötystä pelkästä valonsädemoottorista, mutta haluan kertoa sinulle vielä parista viimeisimmästä kikastani: ensinnäkin moottorissa on nyt pintapuolinen (nopea) tarkistus sekä syvällinen (hidas) tarkistus. Pintapuolista käytetään pääsääntöisesti aina. Valonsädettä kuljetetaan isoina harppauksina, joiden välillä tämä tarkistus tehdään. Jos ja kun pintapuolinen tarkistus huomaa jonkin elementin kentällä, se kytkee syvällisen tarkistuksen päälle. Syvällinen tarkistus selvittää, että valonsäde ei ole samaan aikaan osumassa kahteen tai useampaan elementtiin. Ja jos on, niin samalla nähdään, kumpaan osutaan ensiksi. Tämän uudistuksen idea on se, että kun ennen syvällinen tarkistus oli kokoajan päällä, niin nyt sitä käytetään vain silloin kun on tarvetta.
+
+Toinen kikka on se, että sain kuin sainkin merkittyä peilit ja esteet karttaan paljon pienemmillä merkinnöillä, mutta niin, että merkinnät myöskin huomataan - toisin kuin ennen. Eli pienemmät merkinnät aiheuttavat vähemmän ns. "vääriä tarkistuksia". Väärällä en tarkoita sitä, että valonsäteen kulku muuttuisi virheellisesti, vaan sitä, että prosessia hidastetaan turhaan.
+
+Nyt tämä moottori on sellaisessa kuosissa, että jos pahoja bugeja ei ilmene, niin se jää luultavasti juuri tähän muotoon. Nopea, tarkka ja fiksu moottori (jos saan kehua omaa työtäni 8D ). Seuraavaksi alkaakin sitten kenttäeditorin keventäminen. Saas nähdä, mitä kommelluksia saan sillä puolella aikaan.
+
+---
+
+Juuh, pientä nopeutusta olen tainnut saadakin aikaan vähentämällä elementtien turhaa läpikäyntiä ja laittamalla ne piirtymään muistiin. Jaa-a, ehkäpä nyt suon itselleni vähän suuremman tovin pelin pelaamista varten. Jos vaikka kentän tai kaksi saisi siinä samassa luotua. Ja sen jälkeen nuQ. Kellohan on nyt 01:26 torstai-iltana (eli varhain perjantaina). Mutta onneksi nyt on syysloma.
+
+---
+
+27.10.2006
+
+Nyt kun olen optimoinut valonsädemoottoria tarpeeksi, voinkin keskittyä laatimaan peliin lisää toimintoja. Tänään ensi töikseni kommentoin ja ryhmittelin pelin alun muuttuja-, vakio- ja tyyppiesittelyt, kun ne ennen olivat kamalassa sekasotkussa. Nyt kaikki muuttujat löytyvät helposti hyvän lajittelun ansiosta. Aloin myös värkkäämään toplistaominaisuutta.
+
+Minulla olisi kaksi keinoa tallettaa toplistat. Joko jokaiselle kentälle erillinen toplistatiedosto, tai sitten toplistojen sisällyttäminen itse kenttätiedostoon. Valitsin jälkimmäisen, sillä tällöin toplista kulkee kentän mukana, jos sitä kopioidaan ja levitetään eteenpäin. Lisäksi listan tyhjentäminen ei näin ole mahdollista poistamalla tiedosto, jossa lista on. Koko kenttähän poistuisi nimittäin samalla. Teen kyllä varmasti toiminnon, jolla halutun kentän toplistan voi tyhjentää, mutta rajoitan sen käyttöoikeutta jotenkin. Ehkäpä siinäkin pitää tietää kentälle annettu salasana. Jaa-a, se on vielä auki.
+
+Top-listojen muokkaaminen ei sitten tietenkään ole mahdollista kenttätiedostoa muokkaamalla. Kaikki nimi- ja pistetiedot nimittäin kryptataan tähän tiedostoon, niin kuin osa muistakin kenttää koskevista tiedoista. Kaikkea kenttätietoa ei ainakaan tällä hetkellä kryptata. En sitten tiedä, pitäisikö niin tehdä. Välttämättä ei, kun tärkeimmät (kuten kentän salasana) kuitenkin kryptataan.
+
+---
+
+Noih. Toplistatoiminto on pikku viilailuja vaille valmis. Tosin nyt vasta tajusin ongelman, joka piilee siinä, että toplistat talletetaan itse kenttätiedostoon. Kun toplistaan kirjoitettan, niin kenttä tallennetaan ja pelaajan kenttään asettamat lisäpeilit tallentuvat myös. Minun täytyy korjata ongelma liittämällä kuhunkin peiliin määrä, että tuleeko se tallentaa vai ei. Tällöin ongelma ratkeaa.
+
+Mutta muutoin toplista näyttäisi toimivat mallikkaasti. Jotta siihen voisi kirjoittaa, pitää kenttä olla ominaisuuksistaan merkitty "valmiiksi". Tämä sen vuoksi, ettei peli turhaan ehdottelisi toplistalle kirjoittelemista siinä vaiheessa, kun kenttään vasta viimesitellään eikä pelata. Tämä valmiiksi merkkaaminen myös poistaa pelaajalta mahdollisuuden käyttää seuraavia työkaluja: Aseta valonlähde, Luo Este, Luo Estoalue, Luo Kohde. Ensimmäinen noista työkaluista tietysti antaisi muuttaa valonsäteen laoituspaikkaa ja -suuntaa ja nuo loput kolme ovat tavallisessa pelaamisessa hyödyttömiä. Kun kenttä on merkitty valmiiksi, editorin käyttöliittymässä on pari muutakin pikkueroa, kuten nappi, josta toplistan näkee.
+
+Kentän kehittäjä voi vielä jälkeenpäin ottaa pois "Kenttä on valmis" -merkinnän kentän ominaisuuksista. Tämä tottakai edellyttää kentän salasanan tietämistä, jos sellainen on asetettu. Jos kenttä on merkitty valmiiksi, ei editori tarjoa mahdollisuutta tallentaa kenttää. Tällöin kentän kehittäjä voi tallentaa tekemänsä muutokset laittamalla kentän ominaisuuksissa rastin ruutuun: "Tallenna kenttä kun painan Ok".
+
+Tietysti minun täytyy tehdä peliin ominaisuus, jolla PELAAJA voi tallentaa johonkin kenttään luomansa suorituksen kyseisestä kentästä erilliseen tiedostoon. Eihän hienoja viritelmiä muutoin saa tallennettua :D.
+
+---
+
+29.10.2006
+
+Olen tehnyt joitakin uusia kenttiä, ja pari juttua editorissa on alkanut hieman ärsyttää. Molemmat liittyvät siirtotyökaluun ja toinen sen lisäksi myös poistotyökaluun. Ensinnäkin siirrettäessä peilejä ja esteitä oli ennen mahdollista tarrata kiinni peilin tai esteen jommasta kummasta päästä ja liikuttaa näin yhtä päätä kerrallaan. Koko peilin tai esteen liikuttelu yhdellä kertaa ei onnistunut. Tämän toiminnon olen nyt lisännyt, ja se toimii kun peliin tai esteeseen tarttuu hiirellä muualta kuin päistä.
+
+Toinen juttu on se, että jos esimerkiksi kahden peilin toiset päät ovat päällekkäin, ja haluaisin siirtää jompaa kumpaa näistä päistä, niin editori ei aina tiedä, kumpaa peiliä tarkoitan, ja valitsee sen peilin, joka on luotu aiemmin. Sama minkä tahansa muiden elementtien kohdalla. Ajattelin ratkaista homman niin, että käyttäjä voisi hiiren oikeaa klikkaamalla valita haluamansa elmentin. Eli aina kun hiiren oikeaa klikkaa tälläisen ongelmakohdan päällä, niin siirrettäväksi elementiksi valitaan seuraavana oleva elementti ja editori värjää aina "valittuna" olevan elementin erikoisvärillä, jolloin käyttäjä näkee, mitä elementtiä ollaan siirtämässä. Sama koskee myös poistotyökalua.
+
+Homman ohjelmoiminen vaan on vähän hankalampaa. Mutta luulen keksiväni ratkaisun:
+Elementtejä läpikäytäessä - nimenomaan tämän tilantaan kohdalla - jokaiselle elementille lasketaan järjestysnumero. Samalla merkitään muistiin elementtien kokonaismäärä. Käyttäjän - hiiren oikealla muuttamaa - valintanumeroa pidetään ylhäällä jossakin toisessa muuttujassa ja kun on tarkoitus tehdä sille tietylle elementille jotakin, niin haetaan elementti järjestysnumeron perusteella. Sama hakuhomma myös kun näytetään valittuna oleva elementti.
+
+Näin se menee.
+
+---
+
+Jees, sain tuon toimimaan ainakin pikaisella testauksella katsottuna hyvin. Tietysti jotakin korjattavaa varmaan ilmenee sitten, kun ehdin kokeilla lisää. Mitää tälläistä toimintoa en ole ennen koodannut, joten olen varsin tyytyväinen lopputulokseen. Editorin käyttöliittymä paranee vähän kerrassaan!
+
+Tässä kohtaa voisin kirjoittaa lyhyen yleiskatsauksen koko pelistä:
+
+Peliä pelataan tekemällä ensin editorissa pelattava kenttä. Kun se on luotu, se merkitään "valmiiksi" ja siinä olevat elementit yleensä lukitaan. Kun kenttä on merkitty valmiiksi, editori muuttaa hieman ominaisuuksiaan ja kentän testaaminen lasketaan pelaamiseksi, jolloin myös toplistalle kirjoittaminen mahdollistuu.
+
+Kun valmista kenttää pelataan, siihen voidaan yleisesti ottaen lisätä peilejä. Myös näiden lisättyjen peilien poistaminen ja liikuttaminen onnistuu. Jos kentän tekijä on jättänyt joitain elementtejä lukitsematta (tuskinpa), niin myös niitä voi liikuttaa ja poistaa. Tämä voi tuoda erinlaisuutta kenttiin.
+
+Kun peilejä on lisätty ja ne on säädetty oman maun mukaan, kenttää kokeillaan, ja valonsäteen liike lasketaan ja näytetään pelaajalle. Tällöin nähdään, osuiko säde valaistaviin kohteisiin. Sitten vain palataan takaisin editoriin tai kenties kirjoitetaan oma nimi toplistalle.
+
+Kenttä tottakai tallennetaan, mutta kun se on merkitty valmiiksi, siihen pelaajan tekemät muutokset ja lisäykset eivät enää tallennu. Pelaaja voi ottaa suorituksestaan kuvan, joten hienot viritykset ja muut eivät joudu bittitaivaaseen.
+
+Valonsäteen liikkeen laskeva valonsädemoottori on lähes täydellinen. Se ei huomaa peiliä tai estettä tilanteessa jossa valonsäde tulee peilin (puhun nyt pelkästä peilistä, mutta koskee myös esteitä) jompaan kumpaan päähän täysin saman suuntaisesti peilin kanssa. Katso "kuva":
+
+|
+|valo   peili
+|-----> -----
+|
+|____________
+
+Tällöin valo vain jatkaa suoraan peilistä piittaamatta.
+
+Muutoin valonsädemoottori on ilmeisesti bugiton ja erittäin vikkelä verrattuna siihen, mitä se jossakin vaiheessa oli.
+
+Toplista toimii siten, että mitä lyhyemmän matkan valonsäde on kulkenut, sitä korkeammalle sijalle pääsee. Listaan talletetaan pelaajan nimi, valonsäteen kulkema matka sekä päivämäärä. Toplista on aina kenttäkohtainen. Listoissa saattaa aluksi olla minun pelaamiani tuloksia (yksi per kenttä), joita voi sitten koettaa rikkoa. Suurimmaksi osaksi listan saavat kuitenkin pelaajat itse täyttää. Toplistat talletetaan samaan tiedostoon itse kentän kanssa, joten toplistaa ei ole mahdollista tyhjentää ilman kenttään viittaavaa salasanaa (jonka kentän tekijä voi asettaa) tai omaamatta haksaustaitoja.
+
+Editori alkaa olla varsin mallikkaassa vaiheessa. Työskentely ei parantuneiden ominaisuuksien vuoksi ole enää niin hankalaa kuin editorin alkuvaiheissa. Yllätys.
+
+Ääni- ja musiikkimaailma pelissä ei ole suuri, eikä ole tarkoituskaan olla. Ääniä ei tällä hetkellä ole ollenkaan, eikä niitä välttämättä ole edes tulossa. Musiikkina pyörii pari Beatlesin säveltä.
+
+---
+
+30.10.2006
+
+Tänään koetin lähteä liikkeelle ihan uudesta asiasta. Nimittäin päivitystoiminnosta. Kirjoitin pienen php-skriptin alun hommaa varten. Näin palvelinpuolen homma on hoidossa, eikä skriptiä ennen ensimmäistä - pelin valmiin version jälkeistä - päivitystä tarvitsisi periaatteessa edes olla. Tietysti on hölmöä, jos peli yrittää ottaa yhteyttä ilman toivoakaan sen saavuttamisesta. Siksi siis pieni skripti palvelimelle, jonka tämän hetkinen tehtävä on vain ja ainostaan vastata pelille: "ei uusia päivityksiä". Olen suunnitellut jo joukon käskyjä, joita tämä skripti tulee myöhemmin pelille lähettämään. Liittyen siis käyttäjälle tarkoitettuihin ilmoituksiin sekä ladattaviin päivitystiedostoihin.
+
+Suurempi homma onkin tehdä hommalle asiakasohjelma (josta tietysti tulee pelin sisäinen viimeistään ensimmäiseen julkistettavaan peliversioon). Eli pitäisi opettaa tietokoneelle, mitä nämä käskyt tahtovat sanoa. Ei siis mitään ylitsepääsemättömän vaikeaa onneksi, pientä duunia vaan.
+
+Mutta koska minulla on myös ollut aikaa pelata itse peliä ihan kunnolla, on valonsädemoottorissa ilmennyt jälleen vikaa. Ei mitään ylitsepääsemätöntä. Niistä ensimmäiseen olen törmännyt jo aiemmin ja olen tutkinutkin sitä. Siitä olen kirjoittanut tuossa eilen. Toinen vika on juuriltaan este-elementeissä, mutta se saa myös peilit oireilemaan. Esteen lähellä olevia peilejä ei huomata, eikä myöskään kaikkia esteitä. Sama vika oli aiemmin kohteiden kanssa, mutta siihen auttoi kohteiden piirtäminen eri karttaan kuin peilit ja esteet. Eli minun on parasta tehdä oma kartta myös esteille, jolloin päällekkäisiä karttamerkintöjä ei synny enää lainakaan. Sen jälkeen katson, mikä tilanne tämän ongelman kohdalla on ja siirtynen tekemään jälleen päivitystoimintoa.
+
+Mutta vielä tuosta ensimmäisestä bugista. Peilien ja esteiden tunnistukseen käytetään CBSDK:n LinesIntersect()-funktiota. Yksinkertainen ja mainio funktio tähän tarkoitukseensa, joka on tarkastaa, ovatko kaksi viivaa päällekkäin. Ja jos ovat, se ilmoittaa myös leikkauspisteen koordinaatit. Aiemmin kuvaamassani tilanteessa se hämmentyy ja sanoo, etteivät viivat leikkaa toisiaan. Vilkaisin joskus, mitä tuo funktio on niellyt, mutta minun matikantaitoni eivät riittäneet sen toiminnan tarkempaan selvittämiseen. Veikkaukseni kuitenkin on, että funktio ilmoittaa sen vuoksi hassun vastauksen, että jos kaksi täysin samansuuntaista viivaa leikkaavat toisensa, niin yhtä ainoaa leikkauspistettä on mahdotonta määrittää, sillä viivathan olevat päällekkäin ja pisteitä on sen vuoksi useita. Ajattelin ratkaista ongelman tekemällä funktion rinnalle tarkistuksen (jonka toteutustapaa en vielä tiedä), joka tarkistaa tämän tilanteen ja toimii sen vaatimalla tavalla ilmoittaen myös leikkauspisteen sellaisesta kohdasta, jonka minä katson hyväksi. :) Mutta tämä luultavasti jonkun verran myöhemmin.
+
+---
+
+Juuh, fiksailu toimii. Tuota CBSDK:hon liittyvää ongelmaa en vielä saanut ratkaistua vaikka yritinkin, mutta toisen sain nuijittua hengiltä tekemällä sen mainitsemani "uudelleenkartoituksen" ja poistamalla pari pätkää vanhaa koodia.
+
+Päivitystoiminto ei vielä edennyt, mutta minäpä tein pelin valikkoa. Nyt on taustalla kaverin kämpästä puinen pöydän tai oven pinta. En nyt enää muista, mistä kohtaa se tarkalleen oli näpätty. Lisäksi samaan puutyyliin kuuluvat nappulat, logo, copyright-teksti ja K-Pelit-kuvalinkki. Enää pitää vain laittaa asioita tapahtumaan, kun niiden päällä klikkaa.
+
+Pitääpä tuo ulkoasu sitten uudistaa myös muussakin osassa peliä kuin vain päävalikossa. Tosin samanlaisia nappuloita en aio joka puolelle peliä laittaa, mitä nyt on valikossa käytössä. Onpahan nimittäin niinkin, että vaikka ne mielestäni hienot ovatkin, niin ne ovat kuitenkin turhan epäkäytännölliset editorissa. Lisäksi tavalliset, WIndows-tyyliset nappulat ovat helpompi ja nopeampia tehdä. Mutta tuota taustakuvaa voisin käyttää hieman enemmän. Editorin musta tausta tosin saa jäädä sellaiseksi millainen se nyt on, jotta pelistä saisi jotain selvääkin.
+
+Juu-u, kello naputtaa 00:15 eikä talviaijasta johtuva yhden tunnin "lisääminen" päivään minua niin paljon auttanut, että olisin jo ihan väsähtänyt. Vaan koska syysloma on ikävästi ohitse ja huomenna on koulua, on minun mentävä pois koodaamasta. Nyyh.
+
+---
+
+31.10.2006
+
+Muokkasin pelin lopunkin ulkoasun käyttämään tuota taustaa. Näin se tuntuu paremmalta. Päivitystoiminto lähti käyntiin. Nyt toiminto osaa ottaa yhteyttä php-skriptiini ja alkaa käsitellä tämän lähettämää vastausta. Homma on vielä sen verran varhaisessa vaiheessa, että peli ei osannut tulkita vastauksessa ollutta viestiä.
+
+Pelissä on nyt vähän yli 2000 riviä koodia (plus noin 500 riviä CBSDK:n koodia plus muuta). Funktioitakin on jo ihan hyvä nippu. Valitettavasti CoolBasic alkaa jo heittää Fatal Erroria välistä. Minulla oli nimittäin liikaa funktioita tuossa pelissä. Jokin CB:n sisäinen raja menee umpeen ja tulee Fatal Error. Ratkaisin ongelman kopioimalla kaikki CBSDK:sta käyttämäni funktiot yhteen - CBSDK:n ulkopuoliseen - tiedostoon. Poistin CBSDK:hon viittaavat kolme Include-riviä (Include linkittää pelin käyttöön lisää koodia) ja laitoin tilalle yhden Include-rivin, joka viittaa tähän uuteen tiedostoon. Nyt pelissä on vähemmän funktioita, sillä kun aiemmin koodissa viitattiin suoraan CBSDK:n include-tiedostoihin, niin nyt viitataan vain yhteen tiedostoon, josta on karsittu pois ne CBSDK:ssa olevat funktiot, joita en pelissä tarvitse, ja jotka muuten olisivat ohjelmointiteknisistä syistä vain vieneet tilaa muilta funktioilta.
+
+Eli nyt vain toivon, että minun tarvitsee luoda enää mahdollisimman vähän funktioita.
+
+---
+
+1.11.2006
+
+Ja marraskuun puolella sitten. Tässä kuussa minulla on synttärit (kuun lopussa) ja täytän 18 :).
+
+Nyt on tuo päivitystoiminto reilassa. Lataa filut niin kuin pitää - ainakin näin muutaman testin perusteella. Pientä viimeistelyä vain ja sitten on se homma hanskassa. Toiminto osaa siis tulkita päivitysksriptin lähettämän vastauksen ja sen perusteella laatia jatkoa. Se kertoo, mitä päivitys tu otullessaan, sekä miten paljon dataa päivityksessä ladataan. Päivityksen aikana pyritään näyttämään mahdollisimman reaaliaikaista tietoa päivityksen etenemisestä. Valitettavasti yksittäisen tiedoston latauksen ollessa kesken, ei sen edistymisestä saada tietoa kuin vasta sitten kun se on ladattu.
+
+No juuh. Kello on 23:18. Taidanpa mennä syömään ja sitten nukkumaan. Huomenna on kutsunnat, tiedä sitten minne päädyn armeijaan vuonna 2008.
+
+---
+
+3.11.2006
+
+Täytyy sanoa, että kutsunnoissa oli halvatun tylsää. Suurin osa ajastahan on vain jonotusta ja odotusta. Nimenhuudosta huomasin, että muutama vanha tuttu siellä oli minun lisäkseni, mutta en heitä sitten sattunut kohtaamaan niin että pitempään olisi ehtinyt jutella. Käsky kävi sitten Suomenlahden Meripuolustusalueelle Upinniemeen. Veneilyhommia siis. :)
+
+No juu, sitten asiaa ihan tuosta pelistäkin. Sain idean, että löisin pelin julkaisupäivämäärän lukkoon ainakin mielessäni. 21.11.2006 ihan piruuttaa sen vuoksi, että silloin on syntymäpäiväni. Tuo ajankohta sopii mielestäni pelin tilanteeseenkin nähden täydellisesti. Siinä missä peli on lähes tulkoon valmis, on minulla hyvin aikaa tehdä kaikki loput toiminnot sekä viimeistely. Aikaa ei kuitenkaan ole liikaa, ja minulla on selkeämpi päämäärä.
+
+Ja tämän päivän kolmanteen kappaleeseen sitten sen verran, että LinesIntersect()-funktio saa luultavasti jossakin vaiheessa päivityksen CBSDK:n yhden kehittäjän, Aavesoturin taholta. Tämän luulisi siis niittaavan sen - toivottavasti viimeisen - bugin valonsädemoottorissa. Toinen bugi mikä pelissä on, koskee editoria. Kerroin aiemmin tehneeni toiminnon, jolla tarkoittamansa elementin voi osoittaa pelille hiiren oikeaa nappia klikkaamalla. Tämä jostakin syystä kuseksii pitkin sääriä sillä tavalla, että se ei anna valita mitään. Bugi ei esiinny aina, vaan välillä. Ja nyt minun onkin haarukoitava bugi esiin luomalla ja kokeilemalla erilaisia tilanteita editorissa.
+
+---
+
+Tuon bugin saatoin saada korjattua - ihan varma en kuitenkaan ole. Noh, tulipa tehtyä nuo asetuksetkin peliin. Tällä hetkellä käytössä on neljä asetusta: Musiikit päällä/poissa, ikkunoitu/kokonäytöllä oleva peli, nätön gamma sekä varoaika. Tuo varoaika tarkoittaa sitä, miten kauan valonsädemoottorille annetaan aikaa laskea valon reitti. Ja jos aika umpeutuu, niin toiminto lopetetaan kesken kaiken. Eipähän jää jumiin missään vaiheessa.
+
+Ja tosiaan ikkunoidunkin pelitilan voi valita, jos niin haluaa. Tämä asetuksen muuttaminen vain vaatii pelin uudelleenkäynnistämisen, sillä siinä muutetaan näyttötilaa ja näyttötilan muuttuessa kaikki ladattu grafiikka menetetään. Sen vuoksi päätin hoitaa homman koko pelin ressutuksella. Ikkunoitu tila on myös hätätapauksia varten. Mikäli jollakulla peli ei suostu avautumaan sanoen "Can not set graphicks mode", niin pelin voi myös käynnistää antamalla käynnistysparametriksi "ikkuna" (ilman lainausmerkkejä). Tällöin asetukset säädetään niin, että peli alkaa heti pyöriä ikkunoidussa tilassa.
+
+Vaan nyt nuQ, kello tulee kohta puoli viisi lauantaiaamuna. Oi huoh.
+
+---
+
+4.11.2006
+
+Tulipa lisättyä päävalikkoon CoolBasic-nappula, jonka klikkaaminen avaa selaimen CoolBasicin sivuille. Pientä mainostusta hyvälle ohjelmointikielelle. Tuo eilinen valintabugi ei ollutkaan hävinnyt, mutta nyt homman pitäisi toimia.
+
+Seuraavaksi lähden viimeistelemään sen päivitystoiminnon ja sitten kirjoittelen peliin ohjeet (pelin sisälle).
+
+---
+
+Nyt on ohjeet kirjoitettu pelin sisään. Erillinen ohjetiedosto tosin on vasta alussa. Uudistin myös hieman pelin grafiikkaa lähinnä värien osalta. Nyt on myös asetuksista mahdollista valita grafiikoiden koko. Se vaikuttaa liukuvärjättyjen viivojen (peilit, esteet ym.) paksuuteen, mutta ei valonsäteen radan laskemiseen - muuten kuin pienenä hidastumisena, jos grafiikoita pidetään kookkaina.
+
+---
+
+5.11.2006
+
+Olen kirjoittanut peliin nyt elementtien värisäädöt. Eli peilien, esteiden ja estoalueiden väri on nyt mahdollista valita pelin asetuksista. Kohteiden värisäädön teen tuota pikaa. Editorissa on edelleen bugeja kun yritetään liikuttaa tai poistaa tiettyä elementtiä. Elementin valinta hiiren oikealla ei aina vieläkään toimi kunnolla ja välillä hiiren kursori pyrkii viestittämään, ettei toiminto käy, kun hiiri on esimerkiksi lukitun elementin ja toisen, lukitsemattoman, päällä. Kaiken näköistä pientä vikaa siis. En usko, että saan kaikkea korjattua homman monimutkaisuuden vuoksi. Aikapulasta ei sentään ole kyse. Pahimmat kuitenkin pois, niin pelin pelaaminen on sujuvaa pienistä virheistä huolimatta, jotka usein ovat vain esteettisiä.
+
+---
+
+Nyt on asetuksissa värisäädöt myös kohteille ja valonsäteelle. Laitoin asetuksiin myös ruudukon koon säätämisen. Editorin bugeille vielä ennättänyt mitään tehdä.
+
+---
+
+7.11.2006
+
+Veljen synttärit tänään, ukko täytti 24.
+
+Noh, peli edistyy edistymistään. CBDSDK:n kehittäjä Aavesoturi lähetti minulle sunnuntaina (5.11.) postia. Paketissa tuli uudistettu LinesIntersect()-funktio sekä pari muuta uutta funktiota, jota tämä LinesIntersect() tarvitsee. Sain ne testattavakseni ennen SDK:hon lisäämistä. Iskin tänään funkkarit kiinni SunBEAMiin, tein pari lisäystä pelin koodiin sekä tuohon LinesIntersectiin(), jotta se kertoo yhden muuttujan välityksellä, ovatko viivat samansuuntaisina päällekkäin. Hetken testailun ja SunBEAMin viilailun jälkeen se viimeinenkin bugi valonsädemoottrista näyttäisi kadonneen! Kiitoksia Aavesoturille ja CBSDK:lle! :)
+
+Noh kehitys jatkuu edelleen tuon editorin bugeja korjatessa. Sen jälkeen kirjoitan pelin tarinan (jonka ensimmäinen versio on minulla jo kirjoitettuna), vilkuilen pelin kaikin puolin läpi, mukaanlukien ohjeet ja asetukset. Sitten vuorossa on ohjetiedoston kirjoittaminen, johon tulee sitten vähän pitemmälti juttua kuin mitä tuohon pelin sisäiseen ohjeeseen on mahtunut.
+
+Tämän jälkeinen aika kuluu varmasti sitten kenttien tekemiseen. Minulla on nyt paljonkin erilaisia kenttiä tallennettuna - tosin joukossa möys muutama testikenttä ja muutaman vähän huonompikin, joita en aio valmiiseen peliin jättää. Sitten pelin julkaisun kynnyksellä tyhjennän kaikki toplistat jättäen luultavasti yhden merkinnän jokaiseen listaan rikottavaksi haasteeksi.
+
+Kun koittaa 21.11, julkaisen pelin ja painun jossakin vaiheessa päivää baariin parille. Mikä valoisa ajatus.
+
+---
+
+8.11.2006
+
+Huoh. Aina kun luulen korjanneeni bugin, huomaankin seuraavissa testeissä sen olevan edelleen olemassa. Löysin bugin uudesta LinesIntersect()-funktiosta: Jos ensimmäinen jana (viivoista olen ennen puhunut, mutta käytänpä nyt tätä jana-sanaa) on lyhyempi kuin toinen jana ja ensimmäinen on kokonaan toisen sisässä, ei LinesIntersect() sitä huomannut. Eli jos tarkasteltu valonsäteen matka oli pitempi kuin peili ja vielä sopivassa kohdassa niin, että peili jää valon sisään, ei peiliä havaita. Korjasin bugin LinesIntersect()-funktiossa tarkentamalla yhtä tarkistusta. Sen jälkeen huomasin edelleen vikaa omassa koodissani - valonsäteen osuessa peiliin juuri tässä tilanteessa, josta olen kokoajan selittänyt, osumiskohdan koordinaattien määrittäminen meni välillä vikaan, ja valittiin peilin väärän pään koordinaatit. Ei aina, mutta joissakin tilanteissa.
+
+No nyt on kaikki korjattu. Lähetän varmaan tänään tai huomenna Aavesoturille tuon korjaamani version tuosta LinesIntersect()-funktiosta.
+
+---
+
+10.11.2006
+
+Eilen tuli vaihdettua tuo valonlähde parempaan. Eräs henkilö nimittäin tarjoutui hommiin K-peleihin, ja hän myös kommentoi aiempaa valonlähdettä, että kai siihen on tulossa muutosta. Niinpä ehdotin häntä tekemään uuden, ja vastauksena tuli kolme kappaletta eri värisiä, hienompi taskulamppuja. Tein siis asetuksen, jolla valonlähteenkin värin voi valita.
+
+Ja tänään ajattelin katsella jälleen tuota editoria, jos sen saisi bugittomammanksi. Sen jälkeen sitä tarinaa ja ohjetiedostoa värkkäämään.
+
+---
+
+14.11.2006
+
+Tein peliin toiminnon, joka tarkistaa kaikki pelin tärkeät tiedostot. Peli antaa virheilmoituksen, jos jotakin tiedostoa ei ole tai jos tiedosto on korruptoitunut tai sitä on kopeloitu.
+
+Kirjoittelin ohjetiedostoon vikatilanteista sekä muutamia kysymyksiä ja vastauksia.
+
+---
+
+15.11.2006
+
+Pelin testiversio valmis. Testiversioon tein pari viimeistelyä sekä valonsäteen radan laskemista osoittavan latausilmoituksen.
+
+---
+
+16.11.2006
+
+Nyt on testiversio jo neljällä henkilöllä testattavana. Yhteensä testattavia on ilmoittautunut viisi (sisältäen pari kaveriani). Vielä en ole saanut mitään palautetta testistä, mutta varmaan kohtapuoliin alkaa jotakin kuulua.
+
+Tässä kuitenkin muutama asia, joita aion parantaa valmiiseen versioon:
+
+-Editorin nopeuttaminen kun kentällä on paljon elementtejä
+-Editorissa on estettävä mahdollisuus siirtää mitään elementtejä edes osittain kentän ulkopuolelle.
+-Kenttiin laitettava vaikeustason määritys
+-Kentän reunassa työskentelyä helpotettava (sallittava hiiren pieni liike pois kentältä)
+-Ruudunkaappausnappi piilotettava, jos peliä pelataan ikkunassa (kaappaus ei ilmeisesti toimi tällöin)
+
+---
+
+19.11.2006 (aamuyöllä)
+
+Kentissä on nyt vaikeustason määritys. Lisäksi kenttiä avatessa on mahdollisuus suodattaa kenttiä niin, että vain tietyn vaikeustason kentät näkyvät. Laitoin taustaruudukon piirtymään koneen muistiin luotavaan kuvaan, jolloin sitä ei tarvitse kokoajan laskea uudestaan - nopeuttaa editoria rahtusen, mutta ei tarpeeksi. Ja tulipahan pari kenttääkin tehtyä.
+
+Kello on kolme, nyt unta palloon.
+
+---
+
+20.11.2006
+
+Viimeiset säädöt. Parantelin kuvankaappausta siten, että jos käyttäjän kirjoittama tiedosto on jo olemassa, tiedoston nimen perään osataan kirjoittaa numero. Tämän jälkeen ollaan vielä valmiita kasvattamaan numeroa, jos on tarvetta.
+
+Nyt minun on aika listata asiat, jotka vielä ennätän tehdä, ja toisaalta taas asiat, jotka tulevat päivityksissä.
+
+Ehdin tehdä:
+-Lisää kenttiä
+-Editorissa on estettävä mahdollisuus siirtää mitään elementtejä edes osittain kentän ulkopuolelle
+-Kentän reunassa työskentelyn helpottaminen
+-Ohjetiedosto loppuun sekä eräs pieni virhe korjattava pelin sisäisessä ohjeessa
+
+Tulee päivityksissä:
+-Editorin nopeutus (samalla suosituskokoonpanossa suorittimen kellotaajuus tippunee 500:aan)
+-Kuvankaappaustoiminnon korjaaminen niin, että se toimii myös kun peliä ajetaan ikkunassa (nyt näytetään vain ilmoitus, että toiminto ei ole käytössä ikkunassa)
+
+---
+
+28.12.2006
+
+Enkö ole muistanut kirjoittaa tänne pelin 1.1-versiosta sekä sen jälkeisestä kehityksestä? Noh, paljon ei ole vielä kuitenkaan muuttunut. 1.1-versio korjasi yhden bugin editorissa sekä lisäsi pari uutta kenttää. Ainoa vaan, että unohdin suojata nämä kaksi kenttää salasanalla, mutta sitähän ei kukaan tiedä, eikä ehkä huomaakaan :). Pitää suojata ne seuraavaan versioon.
+
+Kirjoitin pelistä CoolBasicin foorumeille samoihin aikoihin kun julkaisin 1.1-version. Palaute oli mahtavaa, vaikkakin monet ihmettelivät, miksi lasken valonsäteen matkan niin kömpelösti. Osa ihmisistä nimittäin ihmetteli, miten laskentaan kuluu noin julmatusti aikaa ja sen vuoksi tiedustelivat käyttämääni tekniikkaa. Samassa tajusin itsekin tehneeni homman päin mäntyä. On nimittäin mahdollista tehdä homma niin, että pikselintarkkaa valon etenemistä ei missään vaiheessa tarvitse tehdä. Valo voi edetä esimerkiksi tuhat pikseliä kerraallaan, jolloin katsotaan osumat tältä matkalta ja samalla tarkistetaan, mikä osumapaikka oli lähinnä, eli mihin osuttiin ensimmäisenä.Tätä muutosta työstin jokin aika sitten ja sain homman jo pelittämään. Enää pitää vain päivittää kohteisiin osuminen.
+
+Toinen ihmetystä herättänyt asia oli editorin raskaus poisto- ja siirtotyökaluja käytettäessä. Lupasin tehdä asian eteen jotakin. En vain tiedä vielä, mitä. Pitänee turvautua jo aiemmin koettamaani temppuun, jossa hiiren koordinaattien kohdalta luetaan kuvia ja katsotaan sitä kautta, onko hiiri jonnkin elementin päällä. Jos on, päivitetään sen tyyppiset elementit, jolloin saadaan väritettyä elementti, jonka päällä hiiri on. Ongelmaksihan muodostui silloin se, että kun hiiren siirtää pois elementin päältä, sen väri ei palaudu ennen kuin hiiren siirtää jonkin toisen elementin päälle. Tätä koetin korjata päivittämällä elementit joka tapauksessa tietyin väliajoin, mutta se näytti mielestäni edelleen tökeröltä. Nyt keksin, että voisin tehdä funktion, jolla tunnistetaan, liikkuuko hiiri. Jos hiirtä ei liikuteta, annetaan elementtien päivittyä kokoajan, mutta sitten kun hiirtä taas aletaan käyttää, päivittämistä hidastetaan.
+
+Kolmas toive kommentoijilta oli saada valonsäde näkymään ja päivittymään pelissä kokoajan. Se onkin mahdollista uuden valonsäteenlaskemistekniikan ansiosta. Homma tosin vaatii muulla tavoin hankalia muutoksia. Valonsäteen näyttävässä kohdassa olevat tiedot sekä nappulat pitäisi saada jotenkin upotettua editorin jo muutenkin ahtaaseen toimintopaneeliin. Voikin siis olla, että reaaliaikaisuutta ei nähdä vielä pelin seuraavassa versiossa.
+
+--
+
+Kohteet on nyt päivitetty ja valonsäde osuu niihin. Sen sijaan editorin nopeutusta en saanut vielä toimimaan. Tein sellaisen muutoksen, että jokaisesta peilistä ja esteestä tehdään kaksi erillistä kuvaa. Toinen on normaali elementti ja toinen taas valittuna oleva elementti. Nämä kuvat luodaan aina kun uusi elementti luodaan. Näin samoja elementtejä ei tarvitse kokoajan luoda uudelleen tyhjästä, vaan kaikki on mahdollista piirtää valmiista kuvista. Kuvat vain eivät toimi kunnolla. En saa elementtejä piirtymään niihin oikein. Pitää koettaa myöhemmin uudestaan.
+
+---
+
+Nyt nuo elementikin piirtyvät oikein. Sen sijaan löysin pari uutta bugia. Valonsäde kimpoaa jostain syystä välillä peileistä väärin. Se kimpoutuu peilin väärälle puolelle. En tiedä tähän syytä enkä tarkkaa tapahtumatilannettakaan. Toinen bugi on se, että peli kaatuu MAV:iin kun avaan jonkin kentän ja aiempi kenttä on jo avattu. Molemmat bugit ovat käsittämättömiä.
+
+---
+
+6.1.2007
+
+Minä olen jäätynyt. Uutta kenttää avattaessa peli kaatui MAViin siksi, koska muuttanut aiemman kentän tyhjentävän funktion päin puuta. Funktion piti yhdessä kohtaa poistaa kaikista esteistä luodut kuvat, mutta se yrittikin tehdä sitä vaiheessa, jossa käytiin KOHTEITA läpi, eikä suinkaan esteitä. Tai oikeastaan se ei yrittänyt poistaa esteiden kuvia, vaan peilien kuvia, jotka oli poistettu jo pari koodiriviä aiemmin. Näin ollen tyhjästä on paha nyhjästä muuta kuin Memory Access Violation.
+
+Nooh, sainpahan sen toisenkin bugin korjattua. Valonsäteen osuessa peiliin, sitä siirretään aiena hieman taaksepäin, jottei se joudu saman peilin kanssa heti uudestaan kosketuksiin. Ilmeisesti siirto oli kuitenkin liian pieni, joten suurensin sitä aivan pikkiriikkisen. Ei eroa ihmissilmällä näe kun se on tilanteesta riippuen korkeintaan yksi pikseli. :)
+
+Asetuksia höyläsin kanssa. Nyt Grafiikan koko -säädössä on kaksi uutta kokoa. Aiemmin koot menivät 1,2,3,5. Nyt ne ovat 1,2,3,4,5,10. Eli nelonen tuli täytteeksi ja kymppi vielä "järkyttävän" suureksi kooksi. CB:n foorumeilla oli joku joskus sanonut pelistäni, että taustaruudukko on hirvittävä. En sitten tiedä, mikä siinä on niin pahaa, mutta lisäsin tätäkin varten pari asetusta. Nyt taustaruudukon voi piilottaa ja kursorin kohdistamisen ruudukkoon voi senkin kytkeä pois päältä.
+
+Musiikkipuolta päätin virkistää uudella kappaleella. Etsin jälleen sopivan Beatlesin biisin midiversion ja konverttasin CoolBasicin nieltävään muotoon kahden vanhan kappaleen jatkeeksi.
+
+Seuraavaksi vissiinkin kehittelen lisää kenttiä. Jossakin vaiheessa teen myös pelistä erillisen top-10-listaeditorin, jolla voin poistella kentistä listamerkintöjä. Tämä sen vuoksi ettei listoissa ole liikaa omia merkintöjäni tukkeena.
+
+---
+
+Bugia jälleen. Valo kääntyy vituiksi yhdessä kohtaa. Eri bugi kuin äsken. Niin ja tätäkin enne oli yksi samanlainen valontaittumisbugi kuin yllä. Korjasin homman niin, että valon jatkopaikkaa ei siirretä, vaan se on täsmälleen osumakohta, mutta valo jättää seuraavalla kerralla huomioimatta peilin, johon osui. Se toimi, mutta että nyt sitten tämä.
+
+---
+
+Edelleen 6.1. - nyt tosin illalla kun viimeksi säädin peliä yöllä.
+
+Korjasin tuon eilisen hässäkän vielä silloin yöllä. Palautin systeemin entiselleen, eli peiliä ei jätetä huomiotta, vaan jatkopaikkaa siirretään hieman taaksepäin. Aivan kuten ennen. En vain nyt muista, missä kohtaa tämä vissiin aiheutti bugausta. Pitää tähystää eteenpäin ja tehdä lisää kenttiä ja näin saada bugit ilmaantumaan.
+
+Seuraavaksi ajattelin kuitenkin paneutua päivitystoiminnon päivittämiseen :). Marcoder on vähän aikaa sitten postannut CB:n foorumeille uuden netti-dll:n cb-rajapintoineen ja esimerkkeineen. Saan tehtyä päivitystoiminnosta vähän siistimmän, kun isonkin tiedoston latausvihe näkyy reaaliaikaisesti.
+
+---
+
+7.1.2007
+
+Jatkoin peliä vielä eilenkin, vaikken illalla siitä enää kirjoittanutkaan. Samoin tänään monta tuntia.
+
+Päivitystoiminto on nyt uudistettu ja wörkkii. Olen lisännyt peliin taputus- jne. hurrausäänet, joita kuuluu kun pääsee kentän läpi ja vielä jos pääsee toplistalla ykkössijalle (ja jos listalla oli jo ennestään joku). Alku- ja loppu-fadetkin tuli heitettyä. Aiemmin mainitsemani valonsäteenjatkopaikan siirtämisen suhteen päädyin nyt ratkaisuun, jossa siirtämisessä käytettävä kerroin määritetään automaattisesti tilanteen mukaan. Mitä pienempi on peilin ja valonvälinen kulma (eli mitä suurempi virhemahdollisuus on), sitä suurempi on kerroin. Tämän pitäisi vähentää epärealistista heittoa osumissa sekä buginomaista peilien läpäisyä.
+
+Nyt kentän tekijä voi myös määrittää peileille maksimipituuden kentän ominaisuuksista. Olen tehnyt tämän lähes valmiiksi. Maksimipituus tallentuu kenttäfiluun jne., mutta vielä sitä ei noteerata mitenkään. Teen ominaisuuden loppuun huomenna.
+
+Nyt kello on 01:00 ja huomenna on maanantai ja koulua ja herätys.
+
+---
+
+8.1.2007
+
+Siis ei hele että välillä hajottaa. Tuo säteen jatkopaikan siirtäminen kusi edelleen. Meni taas useassa kohtaa läpi peilien. Muutin systeemin taas sellaiseksi, että jatkopaikkaa ei muuteta, mutta sama peili jätetään seuraavalla kerralla huomioimatta. Nyt vaikuttaisi toimivan ilman niitä bugeja, jotka tulivat viimeksi tätä koettaessani. Nyt vain bugaa se, että jos kaksi peiliä on kiinni toisissaan päistään ja jos valonsäde osuu juuri tähän liitoskohtaan, niin se jää jumiin. Pitää tehdä sellainen lisäys, että osuminen peiliin ei ole mahdollista, jos jatkopaikka on sama kuin edellisellä osumalla. Eli määrätään hetkeksi koordinaatit, joista peileihin ei voi osua.
+
+---
+
+9.1.2007
+
+(klo kolmen jälkeen aamuyöllä)
+
+Jooh, tuo edellinen koordinaattisysteemi ei toiminut, eikä ihme. Tietenkään se ei voisi toimia. Jos sitä käyttää, niin toinen peileistä jätetään huomiotta ja läpäistään. Mutta nyt minulla on paljon toimivampi systeemi. Helvetin paljon toimivampi. Jos valonsäde osuu samoissa koordinaateissa kahteen tai useampaan peiliin, käytetään sellaista näppärää kikkaa, että luodaan "lumepeili", jonka asento (kulma) lasketaan näistä peileistä, joihin osuttiin. Samalla nämä peilit unohtuvat ja keskitytään vain tähän lumepeiliin. Lumepeili ohjaa valonsäteen oikeaan suuntaan ottaen kaikki tarpeelliset peilit huomioon samaan aikaan. Kun homma on hoidettu, lumepeili katoaa itsestään. Testailujen vuoksi laitoin lumepeilin myös näkymään ohuena punaisena viivana. Tietenkään sen ei tule näkyä tavallisesti, joten päätin tehdä peliin ensimmäisen koodin: DISTORTEDMIRROR, joka kirjoitetaan editorissa.
+
+Paitsi että enpä laitakkaan ainakaan vielä. Vähän ongelmia sovittaa huijauskoodisysteemiä näppäinoikoteiden kanssa.
+
+---
+
+11.1.2007
+
+Ajasta aikaan olen korjaillut valonsädemoottoria ja sanonut: nyt se toimii! Ja sen jälkeen: ei se toimikkaan. Eli pientä bugia siellä sun täällä. Minusta tuntuu, että päivityksessä on mennyt jo liian kauan. Päässäni on muutamia ideoita, millä kehittää peliä. Tässä vaiheessa minun on kuitenkin toimittava järkevästi ja korjattava nykyiset bugit ja julkaistava sen jälkeen päivitys. Julkaisun jälkeen voin heti lähteä kehittämään uutta päivitystä uusin kujein.
+
+Eli menen nyt sorvin ääreen ja koetan korjailla mitä pystyn. Tietääkseni peili heijastaa valoa - ei päästä sitä läpi.
+
+---
+
+17.2.2007
+
+Aloin jälleen tekemään tätä. Nyt olen saanut kevennettyä editoria. Se ei enää lagaa kun poisto- tai siirtotyökalu on päällä käsiteltäessä paljon tavaraa sisältävää kenttää. Poistin nimittäin peilien ja esteiden värjäämisen ja laitoin ohjelman vain tarkistamaan, onko hiiri ylipäätään minkään peilin tai esteen päällä ja jos on, niin muutetaan hiiren kursori toiseksi. Nopeus tulee siitä, että enää tarvitse selvittää, mikä elementti on väritettävä. Kohteisiin ja estoalueisiin en ole vielä ehtinyt tätä uutta syysteemiä laittaa.
+
+Otan todennäköisesti pois elementtien valitsemisen hiiren oikealla napilla. Se saa nimittäin pelin melko usein kaatumaan jostain syystä. Hiiren oikealle voisi miettiä muuta tekemistä, tai jättää hyödyttömäksi.
+
+---
+
+20.2.2007
+
+Olen ilmeisesti taas unohtanut kirjoittaa projektipäiväkirjaan. Ei se mitään, erityisempää ei ole vielä tapahtunut. Olen kuitenkin lisännyt peliin tekstielementin. Kentän tekijä voi kirjoittaa kenttäänsä tekstilaatikoita. Tänään sain tekstielementit valmiiksi - niitä voi siirtää, muokata ja poistaa. Lisäksi ne tallentuvat ja latautuvat kenttien yhteydessä, kuten kuuluukin.
+
+Seuraavaksi olisi tarpeen tutkia vielä valonsäteen laskemista ja arvioida bugitilanne. Jos tilanne on lähestulkoon hyvä, ei mitään erityistä tarvitse tehdä ja päivitys viimeinkin lähes valmis. Tämän jälkeen on vuorossa kaikkien ohjeiden ym. tekstien läpilukeminen ja korjaaminen siltä osin kuin uudet muutokset korjauksia vaativat. Niin ja uusia kenttiäkin pitäisi tehdä aika kasa. Pitänee pyytää vaikka Dy3r:ä apuun kenttien tekemisessä, jos hän vaikka innostuisi siitä.
+
+---
+
+Sain tehtyä kolme tutoriaalikenttää. Jatkan bugien kunnollista hakemista seuraavalla kerralla. Nyt kello on 01:25 ja aika mennä iltapalalle ja sitten oikaisemaan.
+
+---
+
+22.2.2007
+
+Noniin, eiköhän ole tämä päivitys jo melkoisen valmis. Eräs henkilö on halukas testaamaan tätä versiota, joten annan sen hänen käsiinsä ennen kunnollista julkistamista.
+
+Tämän jälkeen pääsen sitten version 2.0 kimppuun, johon ajattelin valonsäteen kulun näyttämistä. Tällöin säde laskettaisiin aivan kuten nykyäänkin, ja laskennan jälkeen säteen liike voitaisiin näyttää animaationa.
+
+---

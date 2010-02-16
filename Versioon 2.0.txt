@@ -1,0 +1,5 @@
+-Valonsäteen kulkuanimaatio (asetus on/off sekä animaation nopeus)
+-Pelitilanteen tallennus
+-Monipuolisempi toplista
+-Peilin pituuden "monistaminen"
+-Screenshot toimimaan myös ikkunassa
