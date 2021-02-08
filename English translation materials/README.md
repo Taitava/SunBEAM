@@ -31,7 +31,7 @@ This *wip-english-translation* git branch contains a folder named *English trans
 
 - If a string cannot be found in one language, pick it from the other language. This is why the YAML files contain the language name as the root node, so that we can load multiple translations simultaneously and dynamically borrow stuff from another translation.
 
-- When the game starts, if Asetukset.jtn file does not exist, or if it does not contain a *language* setting (if the file is from old game version), then ask the user "Select a language" in a popup window when the main menu appears. Also display a text "The lanague can be changed later in Settings (Asetukset)." Save the selected language to Asetukset.jtn immediately.
+- When the game starts, if Asetukset.jtn file does not exist, or if it does not contain a *language* setting (if the file is from old game version), then ask the user "Select a language" in a popup window when the main menu appears. Also display a text "The language can be changed later in Settings (Asetukset)." Save the selected language to Asetukset.jtn immediately.
 
 ## CoolText.com
 
